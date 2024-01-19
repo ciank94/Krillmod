@@ -24,6 +24,7 @@ def store_traj(file):
     # Store in dictionary
     store = dict([('imax', imax), ('jmax', jmax), ('depth', dp),
                   ('xp', x), ('yp', y), ('zp', z), ('time', dates)])
+    # traj.close()
     return store
 
 
@@ -36,8 +37,10 @@ def get_traj(store, idx):
     # get dataset
     x = np.array(store['xp'][idx:idx+1][0])
     y = np.array(store['yp'][idx:idx + 1][0])
-
-    slice_v = dict([('xi', x), ('yi', y)])
+    idx = x <= 0  # Fill values
+    # x[idx] = np.nan  # Set fill values to invalid;
+    # y[idx] = np.nan
+    slice_v = dict([('xi', x), ('yi', y), ('dp', store['depth'])])
     return slice_v
 def read_poly():
     import geopandas as gpd
