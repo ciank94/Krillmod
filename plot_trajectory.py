@@ -1,7 +1,8 @@
+import cartopy.crs as ccrs
+import matplotlib.pyplot as plt
+
+
 def plot_geo(lat1, lon1):
-    import cartopy.feature as cfeature
-    import cartopy.crs as ccrs
-    import matplotlib.pyplot as plt
     ax = plt.axes(projection=ccrs.PlateCarree())
     # ax.set_extent([125, 150, 35, 63])
     #     ax.stock_img()
@@ -16,7 +17,6 @@ def plot_geo(lat1, lon1):
 
 
 def plot_grid(vals):
-    import matplotlib.pyplot as plt
 
     x1 = vals['xi']
     y1 = vals['yi']

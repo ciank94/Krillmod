@@ -1,9 +1,11 @@
+import netCDF4 as nc
+from netCDF4 import num2date
+import numpy as np
+import math
+
+
 def store_traj(file):
     # Importing libraries
-    import netCDF4 as nc
-    import numpy as np
-    from netCDF4 import num2date
-
     # get dataset
     traj = nc.Dataset(file)
     # print(traj) #similar to ncdump -h
@@ -30,10 +32,6 @@ def store_traj(file):
 
 def get_traj(store, idx):
     # Importing libraries
-    import netCDF4 as nc
-    import numpy as np
-    from netCDF4 import num2date
-
     # get dataset
     x = np.array(store['xp'][idx:idx+1][0])
     y = np.array(store['yp'][idx:idx + 1][0])
@@ -42,6 +40,8 @@ def get_traj(store, idx):
     # y[idx] = np.nan
     slice_v = dict([('xi', x), ('yi', y), ('dp', store['depth'])])
     return slice_v
+
+
 def read_poly():
     import geopandas as gpd
     import matplotlib.pyplot as plt
@@ -57,15 +57,6 @@ def read_poly():
 
 
 def geo2grid(lat, lon, case):
-
-    import pyproj
-    import netCDF4 as nc
-    import numpy as np
-    import math
-    import pandas as pd
-    import geoplot as gplt
-
-
     case_types = ['get_xy', 'get_bl']
     if case not in case_types:
         raise ValueError("Invalid case type in 3rd argument. Expected one of: %s" % case_types)
@@ -82,7 +73,6 @@ def geo2grid(lat, lon, case):
     y_0 = 971 # Northing at false origin
     dx = 4
     imax = 825 # Weddell Sea domain
-
 
     rval = len(lat)
     xs = np.empty(rval)
@@ -148,6 +138,7 @@ def geo2grid(lat, lon, case):
             ys[i] = y / (dx * 1000)
 
     return xs, ys
+
 
 
 # def region_part()

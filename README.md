@@ -2,6 +2,7 @@
 ## Overview of files
 krillmod.py: Main python file for working with other modules.\
 get_trajectory.py: Module containing functions for pre-processing data.\
+analyse_trajectory.py: Module with functions for analysing trajectories.\
 plot_trajectory.py: Module with plotting functionality.
 
 ## SSMU polygons:

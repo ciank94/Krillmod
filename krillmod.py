@@ -1,15 +1,17 @@
 # master file for krill model analysis
-from Krillmod.get_trajectory import store_traj, get_traj, geo2grid
-from Krillmod.plot_trajectory import plot_geo, plot_grid
+from Krillmod.get_trajectory import *
+from Krillmod.analyse_trajectory import *
+from Krillmod.plot_trajectory import *
 
 #Function that outputs trajectory.nc file into a dictionary storing arrays, cftime and integers
 # file = 'C:/Users/ciank/OneDrive - NTNU/PostDoc/d_Data visualization/trajectory.nc'
 
 file = 'A:/Cian_sinmod/antkrill_sim/trajectory.nc'
 store = store_traj(file)
+# field = dom_path(store)
 
-vals = get_traj(store, 0)
-plot_grid(vals)
+#vals = get_traj(store, 150)
+#plot_grid(vals)
 
 # x1 = vals['xi']
 # y1 = vals['yi']
