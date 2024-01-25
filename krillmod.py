@@ -8,6 +8,18 @@ from Krillmod.plot_trajectory import *
 
 file = 'A:/Cian_sinmod/antkrill_sim/trajectory.nc'
 store = store_traj(file)
+# df = dom_path(store)
+# plot_dom_path(df)
+
+vals = get_traj(store, 0)
+plot_grid(vals)
+
+
+
+
+
+
+
 # field = dom_path(store)
 
 #vals = get_traj(store, 150)
