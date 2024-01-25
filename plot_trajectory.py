@@ -1,20 +1,54 @@
 import cartopy.crs as ccrs
+import cartopy.feature as cfeature
 import matplotlib.pyplot as plt
 import numpy as np
-from Krillmod.get_trajectory import geo2grid
+from mpl_toolkits.basemap import Basemap
+
+from Krillmod.get_trajectory import geo2grid, get_traj, store_traj
 
 
-def plot_geo(lat1, lon1):
-    ax = plt.axes(projection=ccrs.PlateCarree())
+def plot_geo(file):
+    store = store_traj(file)
+
+    vals = get_traj(store, 0)
+    # plot_grid(vals)
+
+    x1 = vals['xi']
+    y1 = vals['yi']
+    idx = (x1 > 0)
+    x2 = x1[idx]
+    y2 = y1[idx]
+    lat1, lon1 = geo2grid(x2, y2, 'get_bl')
+    #fig = plt.figure(figsize=(8, 6))
+    lonW=-85
+    lonE=-29
+    latS=-74
+    latN=-54
+    coordinates = (lonW, lonE, latS, latN)
+    res = 'i'
+    m = Basemap(projection='merc',
+                llcrnrlon=coordinates[0], llcrnrlat=coordinates[2],
+                urcrnrlon=coordinates[1], urcrnrlat=coordinates[3],
+                resolution=res)
+    m.drawcoastlines(linewidth=.5)
+    m.drawmeridians(np.arange(-180., 180., 10.), labels=[False, False, False, True])
+    m.drawparallels(np.arange(-90., 90., 4.), labels=[True, False, False, False])
+    #m.etopo()
+    m.shadedrelief()
+    x, y = m(lon1, lat1)
+    m.scatter(x, y, 3, marker='o', color='r')
+    file = 'C:/Users/ciank/PycharmProjects/sinmod/Krillmod/results/init_geo.png'
+    plt.savefig(file)
     # ax.set_extent([125, 150, 35, 63])
     #     ax.stock_img()
     #
     #     ax.add_feature(cfeature.LAND)  # If I comment this => all ok, but I need
     #     ax.add_feature(cfeature.LAKES)
     #     ax.add_feature(cfeature.RIVERS)
-    ax.coastlines()
+    #ax.coastlines(resolution='10m')
+    # coast = cfeature.GSHHSFeature(scale='coarse', levels=[1])
+    # ax.add_feature(coast)
     #     ax.coastlines()
-    ax.scatter(lon1, lat1, transform=ccrs.PlateCarree())
     return
 
 
@@ -24,15 +58,21 @@ def plot_dom_path(df):
     return
 
 
-def plot_grid(vals):
+def plot_grid(file):
+
+
+    store = store_traj(file)
+    vals = get_traj(store, 0)
 
     x1 = vals['xi']
     y1 = vals['yi']
     idx = (x1 > 0)
     x2 = x1[idx]
     y2 = y1[idx]
-    idxlimx = [min(x2[:]), max(x2[:])]
-    idxlimy = [min(y2[:]), max(y2[:])]
+    fv1 = 50
+    fv2 = 100
+    idxlimx = [min(x2[:])-fv1, max(x2[:])+fv2]
+    idxlimy = [min(y2[:])-fv1, max(y2[:])+fv2]
     dp = vals['dp']
 
     plt.pcolor(dp)
@@ -46,7 +86,7 @@ def plot_grid(vals):
     plt.xlim([idxlimx[0], idxlimx[1]])
     file = 'C:/Users/ciank/PycharmProjects/sinmod/Krillmod/results/init_grid.png'
     plt.savefig(file)
-    open(file)
+    # open(file)
     # plt.ioff()
     # plt.show()
     return
