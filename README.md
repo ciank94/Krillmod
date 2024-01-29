@@ -36,7 +36,7 @@ _Output:_
 Function ``read_ssmu`` is used for accessing polygon data from shapefiles using geopandas. It stores information on subunits file  in the Southern Ocean defining important regions for krill predators. It assumes the 
 ``.shp`` file is in the same folder as the ``.shx`` file required. Shapefiles courtesy of https://github.com/ccamlr/data.
 ```python
-shp_file = A:/ssmu/ssmusPolygon.shp'
+shp_file = 'A:/ssmu/ssmusPolygon.shp'
 shape = read_ssmu(shp_file)
 print(shape[:5])
 ```

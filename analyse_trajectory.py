@@ -10,8 +10,6 @@ def sim_account(store):
     # Table with information:
     # Particle information:
     n_parts = shp[1]
-
-
     date_0 = store['time'][0]
     date_1 = store['time'][shp[0]-1]
     timeframe = date_1 - date_0
@@ -36,14 +34,23 @@ def dom_path(store):
     # dom_path = np.empty(array_shape)
     df = store['depth']
     df[df > 0] = 0
-    x = np.array(store['xp'][0:shp[1], :])
-    y = np.array(store['yp'][0:shp[1], :])
+    x = np.array(store['xp'])
+    y = np.array(store['yp'])
+    av = np.array(store['active'])
+
     for i in range(0, shp[1]):
-        idx = sub2ind(array_shape, x[:, i], y[:, i])
-        idx = idx[idx > 0]
-        idc = np.unique(idx, return_index=True)  # First index where there are unique x and y
-        xi = np.floor(x[idc[1], i]).astype(int)  # Subset based on first index
-        yi = np.floor(y[idc[1], i]).astype(int)
+        act_id = av[:, i]
+        xp = np.floor(x[act_id == 1, i])
+        yp = np.floor(y[act_id == 1, i])
+        idx = sub2ind(array_shape, xp, yp)  # Outputs positional indexes for all times for individual i
+        idc = np.unique(np.floor(idx), return_index=True)  # First index where there are unique x and y
+        xi = np.floor(xp[idc[1]]).astype(int)  # Subset unique visits
+        yi = np.floor(yp[idc[1]]).astype(int)
+        # xi = xi[xi > 0]
+        # yi = yi[yi > 0]
+        if np.shape(xi) != np.shape(yi):
+            breakpoint()
+
         df[yi, xi] = df[yi, xi] + 1
     return df
 

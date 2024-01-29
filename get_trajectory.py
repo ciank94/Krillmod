@@ -22,9 +22,10 @@ def store_traj(file):
     times = traj.variables['time']
     dates = num2date(times[:], times.units)
     x, y, z = traj.variables['x'], traj.variables['y'], traj.variables['z']
+    act = traj.variables['active']
 
     # Store in dictionary
-    store = dict([('imax', imax), ('jmax', jmax), ('depth', dp),
+    store = dict([('imax', imax), ('jmax', jmax), ('depth', dp), ('active', act),
                   ('xp', x), ('yp', y), ('zp', z), ('time', dates)])
     # traj.close()
     return store
@@ -35,22 +36,25 @@ def single_traj(store, idx):
     # get dataset
     x = np.array(store['xp'][idx:idx + 1][0])
     y = np.array(store['yp'][idx:idx + 1][0])
+    active = np.array(store['active'][idx:idx + 1][0])
+    xi = x[active == 1]
+    yi = y[active == 1]
     idx = x <= 0  # Fill values
     # x[idx] = np.nan  # Set fill values to invalid;
     # y[idx] = np.nan
-    slice_v = dict([('xi', x), ('yi', y), ('dp', store['depth'])])
-    return slice_v
+    slice_t = dict([('xp', xi), ('yp', yi)])
+    return slice_t
 
 
 def read_ssmu(shp_file):
 
-    shape = gpd.read_file(shp_file)
-    print(shape.boundary)
-    pl = shape.plot()
-    pl.imshow()
-
-    print(shape[:17])
-    return
+    shape_p = gpd.read_file(shp_file)
+    # print(shape.boundary)
+    # pl = shape.plot()
+    # pl.imshow()
+    #
+    # print(shape[:17])
+    return shape_p
 
 
 def geo2grid(lat, lon, case):
