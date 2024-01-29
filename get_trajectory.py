@@ -11,7 +11,6 @@ def store_traj(file):
     traj = nc.Dataset(file)
     # print(traj) #similar to ncdump -h
     # print(traj.variables.keys()) #prints list of variables
-
     # Subset variables:
     depth = traj.variables['depth']
     dp = depth[:]  # get depth matrix
@@ -31,7 +30,7 @@ def store_traj(file):
     return store
 
 
-def get_traj(store, idx):
+def single_traj(store, idx):
     # Importing libraries
     # get dataset
     x = np.array(store['xp'][idx:idx + 1][0])
@@ -43,8 +42,7 @@ def get_traj(store, idx):
     return slice_v
 
 
-def read_poly():
-    shp_file = 'C:/Users/ciank/PycharmProjects/sinmod/Krillmod/ssmu/ssmusPolygon.shp'
+def read_ssmu(shp_file):
 
     shape = gpd.read_file(shp_file)
     print(shape.boundary)

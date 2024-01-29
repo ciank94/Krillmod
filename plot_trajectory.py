@@ -52,9 +52,26 @@ def plot_geo(file):
     return
 
 
-def plot_dom_path(df):
-    plt.pcolor(df)
-    plt.show()
+def plot_dom_path(df, store):
+    shp = np.shape(store['xp'])
+    dv = shp[1] #Note, this equals total particles for the entire simulation- results are only valid for entire frame
+    df2 = (df/dv)*100
+    plt.pcolor(df2)
+    y2, x2 = np.where(df > 0)
+    fv1 = 1
+    fv2 = 1
+    idxlimx = [min(x2[:]) - fv1, max(x2[:]) + fv2]
+    idxlimy = [min(y2[:]) - fv1, max(y2[:]) + fv2]
+    cmap = plt.get_cmap('coolwarm')  # coolwarm, jet, seismic
+    #plt.clim(0, 2)
+    plt.set_cmap(cmap)
+    plt.colorbar()
+    add_latlon(idxlimx, idxlimy)
+    plt.ylim([idxlimy[0], idxlimy[1]])
+    plt.xlim([idxlimx[0], idxlimx[1]])
+    file = 'C:/Users/ciank/PycharmProjects/sinmod/Krillmod/results/dom_paths.png'
+    plt.savefig(file)
+    #plt.show()
     return
 
 
