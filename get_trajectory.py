@@ -2,7 +2,10 @@ import netCDF4 as nc
 from netCDF4 import num2date
 import numpy as np
 import math
+import shapely.geometry
+import pandas as pd
 import geopandas as gpd
+import pickle
 
 
 def store_traj(file):
@@ -34,16 +37,61 @@ def store_traj(file):
 def single_traj(store, idx):
     # Importing libraries
     # get dataset
-    x = np.array(store['xp'][idx:idx + 1][0])
-    y = np.array(store['yp'][idx:idx + 1][0])
-    active = np.array(store['active'][idx:idx + 1][0])
+    x = np.array(store['xp'][idx])
+    y = np.array(store['yp'][idx])
+    active = np.array(store['active'][idx])
     xi = x[active == 1]
     yi = y[active == 1]
-    idx = x <= 0  # Fill values
+    # idx = x <= 0  # Fill values
     # x[idx] = np.nan  # Set fill values to invalid;
     # y[idx] = np.nan
     slice_t = dict([('xp', xi), ('yp', yi)])
     return slice_t
+
+
+def get_regions(store, shape_v):
+    # Note: Use slices to index lists
+    shp_p = np.shape(shape_v)  # Number of polygons
+    shp_t = np.shape(store['time'])  # Time steps
+    for j in range(0, shp_p[0]):
+        pol_idx = j
+        str_v = ('poly' + str(pol_idx))
+        if j == 0:
+            list_v = {str_v: 0}# list_v = dict([(str_v, 0)])
+        else:
+            list_v[str_v] = 0
+
+    for j in range(0, shp_p[0]): #-1):
+        pol_idx = j  # Index current polygon
+        poly1 = shape_v[pol_idx:pol_idx + 1].geometry  # Extract polygon geometry (gpd object)
+        str_v = ('poly' + str(pol_idx))
+        for ii in range(0, shp_t[0]): #shp_t[0]):
+            idx = ii  # Current time
+            store_t = single_traj(store, idx)  # Time slice of trajectory
+            x = store_t['xp']
+            y = store_t['yp']
+            p_id = inpoly(x, y, poly1)
+            if ii == 0:
+                # list_v[str_v] = [p_id]
+                list_v[str_v] = [p_id]
+            else:
+                list_v[str_v].append(p_id)
+            # list_v[str_v] = [list_v[str_v], p_id]
+        # ['Polygon ' + str(pol_idx)]
+
+    return list_v
+
+
+def inpoly(x, y, poly1):
+    lat, lon = geo2grid(x, y, 'get_bl')  # Convert to geographic coordinates
+    # Create geodataframe from numpy arrays
+    gdf = gpd.GeoDataFrame(geometry=gpd.GeoSeries.from_xy(lon, lat))
+    polya = gpd.GeoDataFrame(poly1)
+    gdf.crs = polya.crs
+    in_pol = gpd.tools.sjoin(gdf, polya, predicate="within", how='left')
+    in_idx = np.where(in_pol.index_right > -1)
+    p_id = in_idx[0]
+    return p_id
 
 
 def read_ssmu(shp_file):
