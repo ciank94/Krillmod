@@ -5,54 +5,32 @@ from Krillmod.import_settings import *
 # store = store_traj(tr_file)    # Read trajectory file
 # shape_v = read_ssmu(shp_file)  # Read ssmu shapefiles
 
-poly_id = read_regions()
-new_mat = np.zeros(np.shape(poly_id))
+
+# Initialization:
+ret = retention(tr_file, reg_file)
+
+reg_vals = ret['start_region']
+
+ids = np.where(reg_vals == 1)
+ids[0]
+
+st_t = ret['start_time'][ids[0], :]
+et_t = ret['exit_time'][ids[0], :]
 
 
-new_mat[poly_id == 1] = 1
-new_mat[poly_id == 2] = 1
-
-
-ps = poly_id[0, :]
-poly_np = [1, 2]
-shp_p = np.shape(poly_np)
-shp_t = np.shape(poly_id)
-
-
-
-for t in range(0, shp_t[0]):
-    for i in range(0, shp_p[0]):
-        region_id[region_id == 1] = 1
-
-
-#get_regions(store, shape_v)
+id_leave = np.where(et_t[:, 1] > 0)
 
 
 
-# np.save('myfile.npy', list_v)
-# np.load('myfile.npy',allow_pickle='TRUE')
+np.shape(ids)
+
+et_t[et_t[:,1]>0,:]
 
 
+idv = 0
+store_reg = store_regions(reg_file, idv)
+store_tra = store_traj(tr_file, idv)
+part_act = store_reg[store_tra['active'] == 1]
 
-#df = dom_path(store)
-#plot_dom_path(df, store)
-#sim_account(store)
-# Save the array to a binary file
-#file = 'C:/Users/ciank/PycharmProjects/sinmod/Krillmod/results/dom_paths.npy'
-#np.save(file, np.array(df))
-
-# Load the saved array
-#df = np.load(file)
-#
-#plot_grid(file)
-
-
-# First index should be for
-
-
-
-
-
-# field = dom_path(store)
 
 

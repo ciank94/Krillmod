@@ -3,13 +3,13 @@ import cartopy.feature as cfeature
 import matplotlib.pyplot as plt
 import numpy as np
 from mpl_toolkits.basemap import Basemap
-from Krillmod.get_trajectory import geo2grid, single_traj, store_traj
+from Krillmod.get_trajectory import geo2grid, store_traj
 
 
 def plot_geo(file):
-    store = store_traj(file)
+    #store = store_traj(file)
 
-    vals = single_traj(store, 0)
+    vals = store_traj(file, 0)
     # plot_grid(vals)
 
     x1 = vals['xi']
@@ -78,7 +78,7 @@ def plot_grid(file):
 
 
     store = store_traj(file)
-    vals = get_traj(store, 0)
+    vals = store_traj(store, 0)
 
     x1 = vals['xi']
     y1 = vals['yi']

@@ -9,17 +9,20 @@ import geopandas as gpd
 import pickle
 import os
 
+# from Krillmod.import_settings import tr_file
+
+
 # from Krillmod.import_settings import sv_dir
 
 
-def store_traj(file):
-    # Importing libraries
+def store_traj(file, idv):
+    # Importing libraries: Problem with code- not closing netcdf files here;
     # get dataset
     traj = nc.Dataset(file)
     # print(traj) #similar to ncdump -h
     # print(traj.variables.keys()) #prints list of variables
     # Subset variables:
-    depth = traj.variables['depth']
+    depth = traj.variables['depth'][:]
     dp = depth[:]  # get depth matrix
     dp_size = np.shape(dp)  # Size of domain
     idx = dp < 0  # Fill values
@@ -28,50 +31,37 @@ def store_traj(file):
     jmax = dp_size[1]
     times = traj.variables['time']
     dates = num2date(times[:], times.units)
-    x, y, z = traj.variables['x'], traj.variables['y'], traj.variables['z']
-    act = traj.variables['active']
+    x, y, z = (np.array(traj.variables['x'][idv, :]), np.array(traj.variables['y'][idv, :]),
+               np.array(traj.variables['z'][idv, :]))
+    act = np.array(traj.variables['active'][idv, :])
+
+    #x_act = x[act == 1]
+    #y_act = y[act == 1]
+    #z_act = z[act == 1]
 
     # Store in dictionary
-    store = dict([('imax', imax), ('jmax', jmax), ('depth', dp), ('active', act),
-                  ('xp', x), ('yp', y), ('zp', z), ('time', dates)])
-    # traj.close()
+    store = dict([('imax', imax), ('jmax', jmax), ('depth', dp), ('active', act), ('xp', x), ('yp', y),
+                  ('zp', z), ('time', dates)])
+    traj.close()
     return store
 
 
-def single_traj(store, idx):
-    # Importing libraries
-    # get dataset
-    x = np.array(store['xp'][idx])
-    y = np.array(store['yp'][idx])
-    active = np.array(store['active'][idx])
-    xi = x[active == 1]
-    yi = y[active == 1]
-    # idx = x <= 0  # Fill values
-    # x[idx] = np.nan  # Set fill values to invalid;
-    # y[idx] = np.nan
-    slice_t = dict([('xp', xi), ('yp', yi)])
-    return slice_t
-
-
-def read_regions():
-    from Krillmod.import_settings import tr_dir
-    r_save = tr_dir + 'regions.nc'
-    nc_file = nc.Dataset(r_save, mode='r', format='NETCDF4_CLASSIC')
-    nc_file.variables.keys()
-    in_polt = nc_file.variables["in_region"][:]
+def store_regions(file, idv):
+    nc_file = nc.Dataset(file, mode='r', format='NETCDF4_CLASSIC')
+    # nc_file.variables.keys()
+    in_polt = np.array(nc_file.variables["in_region"][idv, :])
     # store_pol = dict([("in_reg", in_polt)])
     nc_file.close()
     # Make a check for the year I am trying to read;
     return in_polt
 
 
-def get_regions(store, shape_v):
-
+def get_regions(shape_v):
+    store = store_traj(tr_file, 0)
     # Shapes from trajectory file for creating nc dimensions
     shp_p = np.shape(shape_v)  # Number of polygons
     shp_t = np.shape(store['time'])  # Time steps
-    shp_i = np.shape(store['xp'])  # Number of individuals
-
+    shp_i = np.shape(store['active'])  # Number of individuals
     iv = np.shape(store['depth'])
 
     from Krillmod.import_settings import shp_dir
@@ -98,7 +88,7 @@ def get_regions(store, shape_v):
     poly_ids = np.load(file_inter)
     temp_poly = np.empty([shp_t[0], shp_i[1]])
     for t in range(0, shp_t[0]):
-        store_t = single_traj(store, t)  # Time slice of trajectory
+        store_t = store_traj(tr_file, t)  # Time slice of trajectory
         x = store_t['xp'].astype(int)
         y = store_t['yp'].astype(int)
         poly_fid = poly_ids[y, x]
@@ -152,7 +142,6 @@ def inpoly(x, y, poly1):
 
 
 def read_ssmu(shp_file):
-
     shape_p = gpd.read_file(shp_file)
     # print(shape.boundary)
     # pl = shape.plot()
