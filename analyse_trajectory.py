@@ -1,5 +1,6 @@
 import os
 import numpy as np
+import xarray as xr
 
 
 # Retention in regions
@@ -12,41 +13,73 @@ def retention(tr_file, reg_file):
         idv = 0
         store = store_traj(tr_file, idv)
         store_reg = store_regions(reg_file, idv)
-        start_vec = np.zeros(np.shape(store_reg))
-        store_dict = {'start_time': np.zeros([np.shape(store_reg)[0], 2]),
-                  'exit_time': np.zeros([np.shape(store_reg)[0], 2]),
-                  'start_region': np.zeros([np.shape(store_reg)[0], 1]),
-                  'exit_region': np.zeros([np.shape(store_reg)[0], 1])}
-        shp_t = np.shape(store['time'])
+
+        nc_file = nc.Dataset(reg_file, mode='r', format='NETCDF4_CLASSIC')
+        # nc_file.variables.keys()
+
+        act_ind = np.array(nc_file.variables["act_part"][:])
+        n_time = nc_file.variables["in_region"][0, :]
+        list_start = np.unique(act_ind)
+
+        id1 = list_start[0]
+        log_id1 = act_ind == id1
+        in_polt = np.array(nc_file.variables["in_region"][log_id1, id1:np.shape(n_time)[0]])
+        idp1 = in_polt[:, 0] == 1
+
+
+
+
+
+
+        # store_pol = dict([("in_reg", in_polt)])
+        nc_file.close()
+
+
+
+        Init_reg = np.zeros(np.shape(store_reg))
+        Exit_reg = Init_reg
+        count_id = Exit_reg
+        Init_time = np.zeros([np.shape(store_reg)[0], 2])
+        Exit_time = Init_time
+        shp_t = store['t_id']
+        store_mat = np.zeros([np.shape(store_reg)[0], shp_t[0]])
+
+
         for idv in range(0, shp_t[0]):
+
+            print('Percent complete = ' + str(np.ceil((idv / shp_t[0]) * 100)))
+            # store_reg = store_regions(reg_file, idv)
+            store
+            store_mat[:, idv] = store_reg
+
+
+
+
             print('Percent complete = ' + str(np.ceil((idv / shp_t[0]) * 100)))
             store = store_traj(tr_file, idv)
             store_reg = store_regions(reg_file, idv)
-            act_ind = np.sum(store['active'] == 1)
             if idv == 0:
-                store_dict['start_time'][0:act_ind, 0] = store['time'][idv].day
-                store_dict['start_time'][0:act_ind, 1] = store['time'][idv].hour
-                store_dict['start_region'][0:act_ind, 0] = store_reg[0:act_ind]
-                start_vec[store_reg > 0] = 1  # Assign all individuals an active number
-                t_act = act_ind
+                idx = store_reg > 0
+                Init_reg[idx] = store_reg[idx]  # Initial regions
+                Init_time[idx, 0] = store['time'].day
+                Init_time[idx, 1] = store['time'].hour
+                act_id = store['active']
             else:
-                current_vec = np.zeros(np.shape(start_vec))
-                current_vec[store_reg > 0] = 1
-                diff_v = start_vec - current_vec
-                if len(diff_v[diff_v == 1]) > 0:
-                    store_dict['exit_region'][diff_v == 1, 0] = store_reg[diff_v == 1][:]
-                    store_dict['exit_time'][diff_v == 1, 0] = store['time'][idv].day
-                    store_dict['exit_time'][diff_v == 1, 1] = store['time'][idv].hour
-            if act_ind > t_act:
-                new_reg = store_reg[t_act:act_ind]
-                new_reg[new_reg < 1] = 0
-                store_dict['start_time'][t_act:act_ind, 0] = store['time'][idv].day
-                store_dict['start_time'][t_act:act_ind, 1] = store['time'][idv].hour
-                store_dict['start_region'][t_act:act_ind, 0] = store_reg[t_act:act_ind]
-                start_vec[t_act:act_ind] = new_reg
-                t_act = act_ind
+                # Check for new individuals using the active flag
+                act_id2 = store['active']
+                new_id = act_id2 - act_id
+                act_id = act_id2
+                idx2 = new_id[new_id == 1]
+                Init_reg[idx2] = store_reg[idx2]  # Initial regions
+                Init_time[idx2, 0] = store['time'].day
+                Init_time[idx2, 1] = store['time'].hour
 
-        np.save(file_inter, store_dict)
+                #Check for exit of region:
+                idx3 = ((store_reg - Init_reg) != 0) & (Init_reg > 0) & (count_id != 1)
+                Exit_reg[idx3] = store_reg[idx3]
+                Exit_time[idx3, 0] = store_reg[idx3]
+                Exit_time[idx3, 1] = store_reg[idx3]
+                count_id[idx3] = 1  # Mark individual as accounted for
     else:
         store_dict = np.load(file_inter, allow_pickle=True).item()
     return store_dict

@@ -3,25 +3,17 @@ from netCDF4 import num2date
 from netCDF4 import Dataset    # Note: python is case-sensitive!
 import numpy as np
 import math
-import shapely.geometry
-import pandas as pd
 import geopandas as gpd
-import pickle
 import os
 
-# from Krillmod.import_settings import tr_file
 
-
-# from Krillmod.import_settings import sv_dir
-
-
-def store_traj(file, idv):
-    # Importing libraries: Problem with code- not closing netcdf files here;
-    # get dataset
-    traj = nc.Dataset(file)
+def store_traj(tr_file, idv):
+    # netcdf4 library for extracting dataset
+    traj = nc.Dataset(tr_file)
     # print(traj) #similar to ncdump -h
     # print(traj.variables.keys()) #prints list of variables
-    # Subset variables:
+
+    # Subset variables for time frame:
     depth = traj.variables['depth'][:]
     dp = depth[:]  # get depth matrix
     dp_size = np.shape(dp)  # Size of domain
@@ -30,41 +22,29 @@ def store_traj(file, idv):
     imax = dp_size[0]
     jmax = dp_size[1]
     times = traj.variables['time']
-    dates = num2date(times[:], times.units)
+    t_ids = np.shape(times)
+    dates = num2date(times[idv], times.units)
     x, y, z = (np.array(traj.variables['x'][idv, :]), np.array(traj.variables['y'][idv, :]),
                np.array(traj.variables['z'][idv, :]))
     act = np.array(traj.variables['active'][idv, :])
 
-    #x_act = x[act == 1]
-    #y_act = y[act == 1]
-    #z_act = z[act == 1]
-
-    # Store in dictionary
+    # Store outputs in a dictionary (similar to a structure)
     store = dict([('imax', imax), ('jmax', jmax), ('depth', dp), ('active', act), ('xp', x), ('yp', y),
-                  ('zp', z), ('time', dates)])
+                  ('zp', z), ('time', dates), ('t_id', t_ids)])
     traj.close()
     return store
 
 
-def store_regions(file, idv):
-    nc_file = nc.Dataset(file, mode='r', format='NETCDF4_CLASSIC')
-    # nc_file.variables.keys()
-    in_polt = np.array(nc_file.variables["in_region"][idv, :])
-    # store_pol = dict([("in_reg", in_polt)])
-    nc_file.close()
-    # Make a check for the year I am trying to read;
-    return in_polt
-
-
-def get_regions(shape_v):
+def store_regions(shp_file, tr_file, reg_file):
     store = store_traj(tr_file, 0)
     # Shapes from trajectory file for creating nc dimensions
+    shape_v = read_ssmu(shp_file)
     shp_p = np.shape(shape_v)  # Number of polygons
-    shp_t = np.shape(store['time'])  # Time steps
+    shp_t = store['t_id']  # Time steps
     shp_i = np.shape(store['active'])  # Number of individuals
     iv = np.shape(store['depth'])
 
-    from Krillmod.import_settings import shp_dir
+    from Krillmod.import_settings import shp_dir, tr_dir
     file_inter = shp_dir + str('poly2grid.npy')
     if not os.path.exists(file_inter):
         print('Note: Creating intermediate .npy file with polygon indices mapped to grid coordinates')
@@ -85,46 +65,80 @@ def get_regions(shape_v):
         poly_ids = np.reshape(store_poly, [iv[0], iv[1]])
         np.save(file_inter, poly_ids)
 
+
+    # Assigning polygon values to individuals
     poly_ids = np.load(file_inter)
-    temp_poly = np.empty([shp_t[0], shp_i[1]])
+    act_poly = np.zeros(shp_i[0])
+    in_area = np.zeros([shp_i[0], shp_t[0]])
+    x_vals = np.zeros([shp_i[0], shp_t[0]])
+    y_vals = np.zeros([shp_i[0], shp_t[0]])
     for t in range(0, shp_t[0]):
         store_t = store_traj(tr_file, t)  # Time slice of trajectory
+        xp = store_t['xp']
+        yp = store_t['yp']
         x = store_t['xp'].astype(int)
         y = store_t['yp'].astype(int)
+        act = store_t['active'].astype(int)
+        act_poly = act_poly + act
         poly_fid = poly_ids[y, x]
         idx_pid = (np.where(poly_fid > 0))
-        temp_poly[t, idx_pid] = poly_fid[idx_pid]
+        in_area[idx_pid, t] = poly_fid[idx_pid]
+        x_vals[:, t] = xp
+        y_vals[:, t] = yp
         print('t = ' + str(t) + ' of ' + str(shp_t[0]) + ' steps')
         print('Percent complete = ' + str(np.ceil((t/shp_t[0])*100)))
 
-    # Check that file isn't already open
-    try:
-        nc_file.close()  # just to be safe, make sure dataset is not already open.
-    except:
-        pass
+    act_poly = shp_t[0] - act_poly  # Index of activity
+    list_start = np.unique(act_poly).astype(int)  # find starting points of each individual
 
-    # Create filepath
-    from Krillmod.import_settings import sv_dir, tr_dir
-    # r_save = sv_dir + 'regions.nc'
-    r_save = tr_dir + 'regions.nc'
-    nc_file = Dataset(r_save, mode='w', format='NETCDF4_CLASSIC')
+    start_point = np.zeros(shp_i[0])
+    for i in range(0, len(list_start)):
+        id1 = list_start[i]
+        log_id1 = act_poly == id1
+        in_polt = in_area[log_id1, id1:shp_t[0]]
+        start_point[log_id1] = in_polt[:, 0]
+
+    nc_file = Dataset(reg_file, mode='w', format='NETCDF4_CLASSIC')
 
     # Specify nc dimensions
-    part_dim = nc_file.createDimension('particle', shp_i[1])
+    part_dim = nc_file.createDimension('particle', shp_i[0])
     time_dim = nc_file.createDimension('time', shp_t[0])
-    area_dim = nc_file.createDimension('polygon', shp_p[0])
-
-    # for dim in nc_file.dimensions.items():
-    #     print(dim)
 
     # Create variable for storing presence/ absence in each region at each time:
-    in_region = nc_file.createVariable('in_region', np.int32, ('time', 'particle'))  # , 'polygon'))
-    # consider adding variables: active part; time; polygon names;
+    in_region = nc_file.createVariable('in_region', np.int32, ('particle', 'time'))
+    act_ind = nc_file.createVariable('act_part', np.int32, 'particle')
+    xv = nc_file.createVariable('xp', np.float32, ('particle', 'time'))
+    yv = nc_file.createVariable('yp', np.float32, ('particle', 'time'))
+    start_area = nc_file.createVariable('start', np.int32, 'particle')
 
-    in_region[:] = temp_poly
+    act_ind[:] = act_poly
+    xv[:] = x_vals
+    yv[:] = y_vals
+    in_region[:] = in_area
+    start_area[:] = start_point
+
     print(nc_file)
     nc_file.close()
-    print('Dataset is closed!')
+    print('Dataset1 is closed!')
+    return
+
+
+def get_times(tr_file, time_file):
+    traj = nc.Dataset(tr_file)
+    times = traj.variables['time']
+    date_save = num2date(times, times.units)
+    np.save(time_file, date_save.data)
+    return
+
+
+def get_depth(tr_file, depth_file):
+    traj = nc.Dataset(tr_file)
+    depth = traj.variables['depth'][:]
+    dp = depth[:]  # get depth matrix
+    idx = dp < 0  # Fill values
+    dp[idx] = np.nan  # Set fill values to invalid;
+    dp2 = np.array(dp)
+    np.save(depth_file, dp2)
     return
 
 

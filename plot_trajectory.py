@@ -77,7 +77,7 @@ def plot_dom_path(df, store):
 def plot_grid(file):
 
 
-    store = store_traj(file)
+    store = store_traj(tr_file, 0)
     vals = store_traj(store, 0)
 
     x1 = vals['xi']
@@ -89,14 +89,16 @@ def plot_grid(file):
     fv2 = 100
     idxlimx = [min(x2[:])-fv1, max(x2[:])+fv2]
     idxlimy = [min(y2[:])-fv1, max(y2[:])+fv2]
-    dp = vals['dp']
+    dp = store['depth']
 
     plt.pcolor(dp)
     plt.colorbar()
-    cmap = plt.get_cmap('seismic')  # coolwarm, jet
+    cmap = plt.get_cmap('coolwarm')  # coolwarm, jet
     plt.clim(0, 6000)
     plt.set_cmap(cmap)
     plt.scatter(x2, y2, s=1, c='k')
+    plt.scatter(x2[:, 0], y2[:, 0], s=5, c='w')
+    #plt.scatter(x2[:, -1], y2[:, -1], s=2, c='b')
     add_latlon(idxlimx, idxlimy)
     plt.ylim([idxlimy[0], idxlimy[1]])
     plt.xlim([idxlimx[0], idxlimx[1]])
