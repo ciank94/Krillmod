@@ -44,6 +44,8 @@ def store_regions(shp_file, tr_file, reg_file):
     shp_i = np.shape(store['active'])  # Number of individuals
     iv = np.shape(store['depth'])
 
+    # Creates an intermediate matrix that stores polygon indices in each grid cell for fast identification of polygon
+    # values for individuals
     from Krillmod.import_settings import shp_dir, tr_dir
     file_inter = shp_dir + str('poly2grid.npy')
     if not os.path.exists(file_inter):
@@ -66,7 +68,7 @@ def store_regions(shp_file, tr_file, reg_file):
         np.save(file_inter, poly_ids)
 
 
-    # Assigning polygon values to individuals
+    # Create an nc file with the transpose of the columns
     poly_ids = np.load(file_inter)
     act_poly = np.zeros(shp_i[0])
     in_area = np.zeros([shp_i[0], shp_t[0]])
@@ -245,7 +247,15 @@ def geo2grid(lat, lon, case):
 
     return xs, ys
 
-# def region_part()
+
+def region_part(reg_file):
+    nc_file = nc.Dataset(reg_file, mode='r', format='NETCDF4_CLASSIC')
+    start_id = nc_file['start'][:]
+    subs_so = (start_id == 9) | (start_id == 10) | (start_id == 11)
+    subs_wap = (start_id == 2) | (start_id == 3) | (start_id == 4) | (start_id == 5) | (start_id == 6) | (start_id == 7)
+    area_idx = dict([('SO', subs_so), ('WAP', subs_wap)])
+    nc_file.close()
+    return area_idx
 #     #% !(AP: 1:APPA; 2: APW; 3: DPW; 4: DPE; 5: BSW; 6:BSE; 7: EI; 17: APE)
 #     #% !(SOI: 8: SOPA; 9: SOW; 10:SONE; 11: SOSE)
 #     #% !(SG: 12: SGPA; 13: SGW; 14:SGE)

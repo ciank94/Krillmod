@@ -3,7 +3,8 @@ import cartopy.feature as cfeature
 import matplotlib.pyplot as plt
 import numpy as np
 from mpl_toolkits.basemap import Basemap
-from Krillmod.get_trajectory import geo2grid, store_traj
+#from Krillmod.get_trajectory import geo2grid, store_traj
+#from Krillmod.import_settings import tr_file
 
 
 def plot_geo(file):
@@ -19,12 +20,12 @@ def plot_geo(file):
     y2 = y1[idx]
     lat1, lon1 = geo2grid(x2, y2, 'get_bl')
     #fig = plt.figure(figsize=(8, 6))
-    lonW=-85
-    lonE=-29
-    latS=-74
-    latN=-54
+    lonW = -85
+    lonE = -20 #lonE=-29
+    latS = -70 #latS=-74
+    latN = -50 #latN = -54
     coordinates = (lonW, lonE, latS, latN)
-    res = 'i'
+    res = 'f'
     m = Basemap(projection='merc',
                 llcrnrlon=coordinates[0], llcrnrlat=coordinates[2],
                 urcrnrlon=coordinates[1], urcrnrlat=coordinates[3],
@@ -199,3 +200,115 @@ def add_latlon(idxlimx, idxlimy):
             plt.xticks([])
             plt.xticks(a1, tick_labels)
     return
+
+
+# start_p = 0
+# stop_p = np.shape(x)[0]
+# iter_p = np.shape(start_b[(start_b == uniq_b[0]) & (idv == True)])[0]
+# xp1 = x[start_p:stop_p:iter_p, :]
+# yp1 = y[start_p:stop_p:iter_p, :]
+# plt.figure()
+# # xp1[xp1 == 0] = np.empty
+# # yp1[yp1 == 0] = np.empty
+# plt.pcolor(depth)
+# x1 = np.array(x)
+# y1 = np.array(y)
+# plt.scatter(x1, y1)
+# plt.ylim([idxlimy[0], idxlimy[1]])
+# plt.xlim([idxlimx[0], idxlimx[1]])
+# start_id = nc_file['start'][:]
+#     start_b = nc_file['act_part'][:]
+#     uniq_b = np.unique(start_b)
+#     shp_b = np.shape(uniq_b)[0]
+#
+# #Worm plot: Show the most important paths somehow, also could display start points on colourmaps;
+# #Dom. pathways
+# depth[np.isnan(depth)] = -35000
+# df[depth < 0] = np.nan
+# df2[depth<0] = np.nan
+# if area_name == 'WAP':
+#     corr_max = 30
+#     cmax_dom = np.max(df[df > 0])/1.2
+#     cmax_vis = np.max(df2[df2 > 0]) / 10
+# if area_name == 'SO':
+#     corr_max = 100
+#     cmax_dom = np.max(df[df > 0])/3
+#     cmax_vis = np.max(df2[df2 > 0]) / 6
+#
+#
+# idxlimx = [np.min(x[x>0]), np.max(x[x>0]) - corr_max]
+# idxlimy = [np.min(y[y>0]), np.max(y[y>0]) - corr_max]
+# #plt.figure()
+# fig, ax = plt.subplots()
+# #Total number of visits
+#
+# cmap1 = plt.get_cmap('Oranges')  # coolwarm= divergent, jet, seismic
+# cmap2 = plt.get_cmap('gray')
+# landplot = ax.contourf(depth,levels= [-35000,-20000],extend='both',cmap=cmap2)
+# #landplot = ax.pcolor(depth,cmap=cmap2,clim=[-35000,-20000])
+#
+# #testplot = ax.contourf(df,cmap=cmap1,clim=[0,3000])
+#
+# testplot = ax.contourf(df,levels=np.linspace(0,cmax_dom,15),extend='both',cmap=cmap1)
+#
+# add_latlon(idxlimx, idxlimy)
+# plt.ylim([idxlimy[0], idxlimy[1]])
+# plt.xlim([idxlimx[0], idxlimx[1]])
+#
+#
+# divider = make_axes_locatable(ax)
+# ax_cb = divider.new_horizontal(size="3%", pad=0.05, axes_class=plt.Axes)
+# fig.add_axes(ax_cb)
+# cbar = plt.colorbar(testplot,cax=ax_cb)
+# cbar.ax.tick_params(labelsize=8)
+# #plt.set_cmap('Oranges')
+#
+#
+#
+# #clim_dom = [0, cmax_dom]
+# # plt.clim(clim_dom[0], clim_dom[1])
+# # plt.set_cmap(cmap)
+# # plt.colorbar()
+#
+# file = sv_dir + keysList[ar_idv] + '_' + 'dom_paths.png'
+# plt.savefig(file)
+#
+#
+#
+# #Output = number of unique individuals in each cell & number of visits;
+# # To do: use poly2grid.npy indices for SO to count number of visits to each cell;
+# # and put the plotting stuff below into a functions for 3 separate plots;
+# fig, ax = plt.subplots()
+# #Total number of visits
+# depth[np.isnan(depth)] = -35000
+# cmap1 = plt.get_cmap('Blues')  # coolwarm= divergent, jet, seismic
+# cmap2 = plt.get_cmap('gray')
+# landplot = ax.contourf(depth,levels= [-35000,-20000],extend='both',cmap=cmap2)
+# #landplot = ax.pcolor(depth,cmap=cmap2,clim=[-35000,-20000])
+#
+# #testplot = ax.pcolor(df,cmap=cmap1,clim=[0, 3000])
+#
+# testplot = ax.contourf(df2,levels=np.linspace(0,cmax_vis,15),extend='both',cmap=cmap1)
+#
+# add_latlon(idxlimx, idxlimy)
+# plt.ylim([idxlimy[0], idxlimy[1]])
+# plt.xlim([idxlimx[0], idxlimx[1]])
+#
+#
+# divider = make_axes_locatable(ax)
+# ax_cb = divider.new_horizontal(size="3%", pad=0.05, axes_class=plt.Axes)
+# fig.add_axes(ax_cb)
+# cbar = plt.colorbar(testplot,cax=ax_cb)
+# cbar.ax.tick_params(labelsize=8)
+#
+#
+# file = sv_dir + keysList[ar_idv] + '_' + 'total_visits.png'
+# plt.savefig(file)
+#
+#
+#
+#
+# #Occupancy rate plots:
+#
+# # Worm plots
+# plt.scatter(st_x, st_y, 1, 'b')
