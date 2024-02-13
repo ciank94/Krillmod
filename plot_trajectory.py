@@ -2,10 +2,11 @@ import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 import matplotlib.pyplot as plt
 import numpy as np
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 from mpl_toolkits.basemap import Basemap
 #from Krillmod.get_trajectory import geo2grid, store_traj
 #from Krillmod.import_settings import tr_file
-
+from io import BytesIO
 
 def plot_geo(file):
     #store = store_traj(file)
@@ -169,6 +170,7 @@ def init_grid(store, stepv):
 
 
 def add_latlon(idxlimx, idxlimy):
+    from Krillmod.get_trajectory import geo2grid
     GridData2_IMAX = 780
     GridData2_JMAX = 825
     margv = 25
@@ -185,11 +187,11 @@ def add_latlon(idxlimx, idxlimy):
         tick_labels = []
         for i in range(len(f1)):
             if axfig == 1:
-                vs = str(-1 * np.floor(f1[i]))
-                tick_labels.append(vs + 'S')
+                vs = str(-1 * np.floor(f1[i]).astype(int))
+                tick_labels.append(vs + '$^\circ$S')
             else:
-                vs = str(-1 * np.floor(f2[i]))
-                tick_labels.append(vs + 'W')
+                vs = str(-1 * np.floor(f2[i]).astype(int))
+                tick_labels.append(vs + '$^\circ$W')
             # Clear ticks and labels
 
         # Set ticks and labels based on the axis
@@ -201,6 +203,180 @@ def add_latlon(idxlimx, idxlimy):
             plt.xticks(a1, tick_labels)
     return
 
+
+def plot_dom_paths(tr_folder, reg_file, sv_dir):
+    depth_file = sv_dir + tr_folder + '/depth.npy'
+    depth = np.load(depth_file)
+
+
+    from Krillmod.get_trajectory import region_part
+    area_idx = region_part(reg_file)
+    key_list = list(area_idx.keys())
+    for area_name in key_list:
+        dom_file = sv_dir + tr_folder + '/' + area_name + '_dom_paths.npy'
+        tot_file = sv_dir + tr_folder + '/' + area_name + '_total_visits.npy'
+        for i in range(0, 2):
+            if i == 1:
+                cmax = 2
+                crange = 0.1
+            else:
+                cmax = 0.01
+                crange = 0.001
+
+            if area_name == 'WAP':
+                idxlimx = [100, 500]
+                idxlimy = [250, 650]
+                so_nparts = 45621
+            if area_name == 'SO':
+                idxlimx = [300, 600]
+                idxlimy = [400, 700]
+                so_nparts = 12221
+            if area_name == 'APP':
+                idxlimx = [100, 500]
+                idxlimy = [250, 650]
+                so_nparts = 122452
+            if area_name == 'EAP':
+                idxlimx = [100, 500]
+                idxlimy = [250, 650]
+                so_nparts = 17061
+            if area_name == 'SOP':
+                idxlimx = [300, 600]
+                idxlimy = [400, 700]
+                so_nparts = 66792
+            #     cmax_dom = np.max(df[df > 0])/3
+            #     cmax_vis = np.max(df2[df2 > 0]) / 6
+            #Load dataframe from file
+            if i == 1:
+                df = np.load(dom_file)
+                depth[np.isnan(depth)] = -35000
+                df[depth < 0] = np.nan
+                df[df>0] = (df[df>0]/so_nparts)*100
+
+                fig, ax = plt.subplots()
+                params = {'axes.labelsize': 12, 'axes.titlesize': 12, 'legend.fontsize': 12,
+                          'xtick.labelsize': 12, 'ytick.labelsize': 12}
+                plt.rcParams['font.sans-serif'] = "Times New Roman"
+                #plt.rc('font', size=12)
+
+                #Dominant pathways
+                cmap1 = plt.get_cmap('OrRd')  # Oranges, Reds- sequential coolwarm= divergent, jet, seismic
+                cmap2 = plt.get_cmap('gray')
+                land_plot = ax.contourf(depth,levels= [-40000,-20000],extend='both',cmap=cmap2)
+                depth_plot = ax.contour(depth, np.linspace(0, 1500, 4), extend='both', colors='k', alpha=0.15)
+                data_plot = ax.contourf(df,levels=np.arange(0, cmax, crange),extend='both',cmap=cmap1)
+                #
+            #levels=np.linspace(0,cmax,10)
+                add_latlon(idxlimx, idxlimy)
+                plt.ylim([idxlimy[0], idxlimy[1]])
+                plt.xlim([idxlimx[0], idxlimx[1]])
+                plt.grid(alpha=0.45)
+
+                divider = make_axes_locatable(ax)
+                ax_cb = divider.new_horizontal(size="3%", pad=0.05, axes_class=plt.Axes)
+                fig.add_axes(ax_cb)
+                cbar = plt.colorbar(data_plot, cax=ax_cb)
+                cbar.ax.set_ylabel('Probability (%)', loc='center', size=12.5, weight='bold')
+                cbar.ax.tick_params(labelsize=9,rotation=0)
+                ax.tick_params(axis='x', labelsize=12)
+                ax.tick_params(axis='y', labelsize=12)
+                #plt.rcParams.update(params)
+                #plt.show()
+                file = sv_dir + tr_folder + '/' + area_name + '_dom_paths.svg'
+                plt.savefig(file)
+            else:
+                df = np.load(tot_file)
+                depth[np.isnan(depth)] = -35000
+                df[depth < 0] = np.nan
+                df[df > 0] = (df[df > 0] / np.sum(df[df > 0])) * 100
+
+                fig, ax = plt.subplots()
+                params = {'axes.labelsize': 12, 'axes.titlesize': 12, 'legend.fontsize': 12,
+                          'xtick.labelsize': 12, 'ytick.labelsize': 12}
+                plt.rcParams['font.sans-serif'] = "Times New Roman"
+                # plt.rc('font', size=12)
+
+                # Dominant pathways
+                cmap1 = plt.get_cmap('Blues')  # Oranges, Reds- sequential coolwarm= divergent, jet, seismic
+                cmap2 = plt.get_cmap('gray')
+                land_plot = ax.contourf(depth, levels=[-40000, -20000], extend='both', cmap=cmap2)
+                depth_plot = ax.contour(depth, np.linspace(0, 1500, 4), extend='both', colors='k', alpha=0.15)
+                data_plot = ax.contourf(df, levels=np.arange(0, cmax, crange), extend='both', cmap=cmap1)
+                #
+                # levels=np.linspace(0,cmax,10)
+                add_latlon(idxlimx, idxlimy)
+                plt.ylim([idxlimy[0], idxlimy[1]])
+                plt.xlim([idxlimx[0], idxlimx[1]])
+                plt.grid(alpha=0.45)
+
+                divider = make_axes_locatable(ax)
+                ax_cb = divider.new_horizontal(size="3%", pad=0.05, axes_class=plt.Axes)
+                fig.add_axes(ax_cb)
+                cbar = plt.colorbar(data_plot, cax=ax_cb)
+                cbar.ax.set_ylabel('Probability (%)', loc='center', size=12.5, weight='bold')
+                cbar.ax.tick_params(labelsize=9, rotation=0)
+                ax.tick_params(axis='x', labelsize=12)
+                ax.tick_params(axis='y', labelsize=12)
+                # plt.rcParams.update(params)
+                # plt.show()
+                file = sv_dir + tr_folder + '/' + area_name + '_tot_visits.svg'
+                plt.savefig(file)
+            plt.close(fig)
+
+    return fig
+
+
+def get_frame_as_image(fig):
+    buf = BytesIO()
+    fig.savefig(buf, format='png')
+    buf.seek(0)
+    return plt.imread(buf)
+
+
+def animate_frame(image):
+    fig, ax = plt.subplots()
+    ax.imshow(image)
+    plt.show()
+
+
+def plot_retention(sv_dir, tr_folder, time_file, reg_file):
+    from Krillmod.get_trajectory import region_part
+    area_idx = region_part(reg_file)
+    key_list = list(area_idx.keys())
+    for area_name in key_list:
+        rfile = sv_dir + tr_folder + '/' + area_name + '_retention_days.npy'
+        data = np.load(rfile)
+
+        fig, ax = plt.subplots()
+        list_id = np.unique(data[:, 1]).astype(int)
+        v = np.zeros([len(list_id), 1])
+        v2 = np.zeros([len(list_id), 1])
+        time = np.load(time_file, allow_pickle=True)
+        c = -1
+        for i in range(0, np.shape(list_id)[0]):
+            id1 = data[:, 1] == list_id[i]
+            vals = data[id1, 0]
+            v1 = vals[vals > -1]
+            v[i, 0] = np.median(v1)
+            v2[i, 0] = np.mean(v1)
+
+        date_time = time[list_id]
+        list_labels = []
+        for i in range(0, np.shape(date_time)[0]):
+            if i == 0:
+                list_labels = [date_time[i].strftime("%d/%m/%Y")]
+            else:
+                list_labels.append(date_time[i].strftime("%d/%m/%Y"))
+
+        ax.plot(list_labels, v)
+        ax.plot(list_labels, v2)
+        ax.tick_params(axis='x', labelsize=8, rotation=20)
+        ax.tick_params(axis='y', labelsize=10)
+        ax.xaxis.set_major_locator(plt.MaxNLocator(8))
+        ax.legend(['median', 'mean'])
+        ax.set_ylabel('Days in ' + area_name + ' region')
+        file = sv_dir + tr_folder + '/' + area_name + '_retention.svg'
+        plt.savefig(file)
+    return
 
 # start_p = 0
 # stop_p = np.shape(x)[0]
@@ -235,33 +411,10 @@ def add_latlon(idxlimx, idxlimy):
 #     cmax_dom = np.max(df[df > 0])/3
 #     cmax_vis = np.max(df2[df2 > 0]) / 6
 #
-#
+
 # idxlimx = [np.min(x[x>0]), np.max(x[x>0]) - corr_max]
 # idxlimy = [np.min(y[y>0]), np.max(y[y>0]) - corr_max]
-# #plt.figure()
-# fig, ax = plt.subplots()
-# #Total number of visits
-#
-# cmap1 = plt.get_cmap('Oranges')  # coolwarm= divergent, jet, seismic
-# cmap2 = plt.get_cmap('gray')
-# landplot = ax.contourf(depth,levels= [-35000,-20000],extend='both',cmap=cmap2)
-# #landplot = ax.pcolor(depth,cmap=cmap2,clim=[-35000,-20000])
-#
-# #testplot = ax.contourf(df,cmap=cmap1,clim=[0,3000])
-#
-# testplot = ax.contourf(df,levels=np.linspace(0,cmax_dom,15),extend='both',cmap=cmap1)
-#
-# add_latlon(idxlimx, idxlimy)
-# plt.ylim([idxlimy[0], idxlimy[1]])
-# plt.xlim([idxlimx[0], idxlimx[1]])
-#
-#
-# divider = make_axes_locatable(ax)
-# ax_cb = divider.new_horizontal(size="3%", pad=0.05, axes_class=plt.Axes)
-# fig.add_axes(ax_cb)
-# cbar = plt.colorbar(testplot,cax=ax_cb)
-# cbar.ax.tick_params(labelsize=8)
-# #plt.set_cmap('Oranges')
+
 #
 #
 #

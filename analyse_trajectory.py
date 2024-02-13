@@ -31,14 +31,16 @@ def sim_account(store):
     return
 
 
-def particle_visits(reg_file):
+def particle_visits(reg_file, sv_dir, tr_folder, depth_file):
     from Krillmod.get_trajectory import region_part
-    from Krillmod.import_settings import depth, sv_dir
+
+    depth = np.load(depth_file)
 
     # Trajectory data reformatted:
     nc_file = nc.Dataset(reg_file, mode='r', format='NETCDF4_CLASSIC')
     area_idx = region_part(reg_file)
     key_list = list(area_idx.keys())
+    print(key_list)
 
     for area_name in key_list:
         idv = (area_idx[area_name])
@@ -55,9 +57,11 @@ def particle_visits(reg_file):
             for j in range(0, np.shape(xi)[0]):
                 df2[yi[j], xi[j]] = df2[yi[j], xi[j]] + 1
 
-        file1 = sv_dir + area_name + '_dom_paths.npy'
-        file2 = sv_dir + area_name + '_total_visits.npy'
-        file3 = sv_dir + area_name + '_n_parts.txt'
+        file1 = sv_dir + tr_folder + '/' + area_name + '_dom_paths.npy'
+        file2 = sv_dir + tr_folder + '/' + area_name + '_total_visits.npy'
+        file3 = sv_dir + tr_folder + '/' + area_name + '_n_parts.txt'
+
+        print('Saving ' + area_name + ' visits')
 
         # Save matrices to intermediate file;
         np.save(file1, df)
@@ -73,6 +77,49 @@ def particle_visits(reg_file):
 
     nc_file.close()  # close nc file
     return
+
+
+def retention_part(reg_file, time_file, sv_dir, tr_folder):
+    from Krillmod.get_trajectory import region_part
+    # Trajectory data reformatted:
+    nc_file = nc.Dataset(reg_file, mode='r', format='NETCDF4_CLASSIC')
+    area_idx = region_part(reg_file)
+    key_list = list(area_idx.keys())
+    time = np.load(time_file, allow_pickle=True)
+    for area_name in key_list:
+        idv = (area_idx[area_name])
+        x = nc_file['xp'][idv, :].astype(int)
+        reg_v = nc_file['in_region'][idv, :]
+        start_p = nc_file['act_part'][idv]
+        uniq_b = np.unique(start_p)
+        shp_b = np.shape(uniq_b)[0]
+        shp_t = np.shape(x)[1]
+        store_t = np.zeros([np.shape(start_p)[0], 2])
+        c = -1
+        for j in range(0, shp_b):
+            print(area_name + ': Percent complete = ' + str(np.ceil((j / shp_b) * 100)))
+            id_b = start_p == uniq_b[j]
+            reg_sim = reg_v[id_b, uniq_b[j]:shp_t]
+            b_it = np.shape(reg_sim)[0]
+            if j == 0:
+                reg_uniq = np.unique(reg_sim[:, 0])
+
+            for i in range(0, b_it):
+                c = c + 1
+                id_in = np.isin(reg_sim[i, :], reg_uniq)
+                id_f = np.where(id_in == False)
+                if len(id_f[0]) == 0:
+                    store_t[c, 0] = -1
+                else:
+                    dt = time[id_f[0][0]] - time[0]
+                    store_t[c, 0] = dt.days
+
+        store_t[:, 1] = start_p
+        file1 = sv_dir + tr_folder + '/' + area_name + '_retention_days.npy'
+        np.save(file1, store_t)
+    nc_file.close()
+    return
+
 
 
 

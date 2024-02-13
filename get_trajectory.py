@@ -35,7 +35,9 @@ def store_traj(tr_file, idv):
     return store
 
 
-def store_regions(shp_file, tr_file, reg_file):
+def store_regions(list_dir):
+    tr_file = list_dir['traj_file']
+    shp_file = list_dir['shape_file']
     store = store_traj(tr_file, 0)
     # Shapes from trajectory file for creating nc dimensions
     shape_v = read_ssmu(shp_file)
@@ -46,7 +48,10 @@ def store_regions(shp_file, tr_file, reg_file):
 
     # Creates an intermediate matrix that stores polygon indices in each grid cell for fast identification of polygon
     # values for individuals
-    from Krillmod.import_settings import shp_dir, tr_dir
+    shp_dir = list_dir['shape_folder']
+    tr_dir = list_dir['traj_folder']
+    reg_file = list_dir['reg_file']
+
     file_inter = shp_dir + str('poly2grid.npy')
     if not os.path.exists(file_inter):
         print('Note: Creating intermediate .npy file with polygon indices mapped to grid coordinates')
@@ -125,22 +130,22 @@ def store_regions(shp_file, tr_file, reg_file):
     return
 
 
-def get_times(tr_file, time_file):
-    traj = nc.Dataset(tr_file)
+def get_times(list_dir):
+    traj = nc.Dataset(list_dir['traj_file'])
     times = traj.variables['time']
     date_save = num2date(times, times.units)
-    np.save(time_file, date_save.data)
+    np.save(list_dir['time_file'], date_save.data)
     return
 
 
-def get_depth(tr_file, depth_file):
-    traj = nc.Dataset(tr_file)
+def get_depth(list_dir):
+    traj = nc.Dataset(list_dir['traj_file'])
     depth = traj.variables['depth'][:]
     dp = depth[:]  # get depth matrix
     idx = dp < 0  # Fill values
     dp[idx] = np.nan  # Set fill values to invalid;
     dp2 = np.array(dp)
-    np.save(depth_file, dp2)
+    np.save(list_dir['depth_file'], dp2)
     return
 
 
@@ -253,7 +258,10 @@ def region_part(reg_file):
     start_id = nc_file['start'][:]
     subs_so = (start_id == 9) | (start_id == 10) | (start_id == 11)
     subs_wap = (start_id == 2) | (start_id == 3) | (start_id == 4) | (start_id == 5) | (start_id == 6) | (start_id == 7)
-    area_idx = dict([('SO', subs_so), ('WAP', subs_wap)])
+    subs_eap = (start_id == 17)
+    subs_apa = (start_id == 1)
+    subs_sopa = (start_id == 8)
+    area_idx = dict([('SO', subs_so), ('WAP', subs_wap), ('EAP', subs_eap), ('APP', subs_apa), ('SOP', subs_sopa)])
     nc_file.close()
     return area_idx
 #     #% !(AP: 1:APPA; 2: APW; 3: DPW; 4: DPE; 5: BSW; 6:BSE; 7: EI; 17: APE)
