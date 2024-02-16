@@ -17,7 +17,7 @@ def store_files(list_dir):
     list_dir['traj_file'] = list_dir['traj_folder'] + list_dir['sim_folder'] + '/trajectory.nc'
     list_dir['reg_file'] = list_dir['save_folder'] + list_dir['sim_folder'] + '/regions.nc'
     list_dir['time_file'] = list_dir['save_folder'] + list_dir['sim_folder'] + '/times.npy'
-    list_dir['depth_file '] = list_dir['save_folder'] + list_dir['sim_folder'] + '/depth.npy'
+    list_dir['depth_file'] = list_dir['save_folder'] + list_dir['sim_folder'] + '/depth.npy'
 
     if not os.path.exists(list_dir['shape_file']):
         print('Error: Directory "' + list_dir['shape_file'] + '" does not exist')
