@@ -7,40 +7,10 @@ import geopandas as gpd
 import os
 
 
-def store_traj(tr_file, idv):
-    # netcdf4 library for extracting dataset
-    traj = nc.Dataset(tr_file)
-    # print(traj) #similar to ncdump -h
-    # print(traj.variables.keys()) #prints list of variables
-
-    # Subset variables for time frame:
-    depth = traj.variables['depth'][:]
-    dp = depth[:]  # get depth matrix
-    dp_size = np.shape(dp)  # Size of domain
-    idx = dp < 0  # Fill values
-    dp[idx] = np.nan  # Set fill values to invalid;
-    imax = dp_size[0]
-    jmax = dp_size[1]
-    times = traj.variables['time']
-    t_ids = np.shape(times)
-    dates = num2date(times[idv], times.units)
-    x, y, z = (np.array(traj.variables['x'][idv, :]), np.array(traj.variables['y'][idv, :]),
-               np.array(traj.variables['z'][idv, :]))
-    act = np.array(traj.variables['active'][idv, :])
-
-    # Store outputs in a dictionary (similar to a structure)
-    store = dict([('imax', imax), ('jmax', jmax), ('depth', dp), ('active', act), ('xp', x), ('yp', y),
-                  ('zp', z), ('time', dates), ('t_id', t_ids)])
-    traj.close()
-    return store
-
-
 def store_regions(list_dir):
-    tr_file = list_dir['traj_file']
-    shp_file = list_dir['shape_file']
-    store = store_traj(tr_file, 0)
     # Shapes from trajectory file for creating nc dimensions
-    shape_v = read_ssmu(shp_file)
+    store = store_traj(list_dir['traj_file'], 0)
+    shape_v = read_shape(list_dir['shape_file'])  # Extract shape data from file
     shp_p = np.shape(shape_v)  # Number of polygons
     shp_t = store['t_id']  # Time steps
     shp_i = np.shape(store['active'])  # Number of individuals
@@ -48,11 +18,7 @@ def store_regions(list_dir):
 
     # Creates an intermediate matrix that stores polygon indices in each grid cell for fast identification of polygon
     # values for individuals
-    shp_dir = list_dir['shape_folder']
-    tr_dir = list_dir['traj_folder']
-    reg_file = list_dir['reg_file']
-
-    file_inter = shp_dir + str('poly2grid.npy')
+    file_inter = list_dir['shape_folder'] + str('poly2grid.npy')
     if not os.path.exists(file_inter):
         print('Note: Creating intermediate .npy file with polygon indices mapped to grid coordinates')
         store_ids = np.zeros([iv[0]*iv[1], 2])
@@ -67,37 +33,39 @@ def store_regions(list_dir):
         for p in range(0, shp_p[0]):
             print('poly = ' + str(p+1) + ' of ' + str(shp_p[0]))
             poly1 = shape_v[p:p + 1].geometry  # Extract polygon geometry (gpd object)
-            p_id = inpoly(store_ids[:, 0], store_ids[:, 1], poly1)
+            p_id = in_poly(store_ids[:, 0], store_ids[:, 1], poly1)
             store_poly[p_id == 1] = p + 1
         poly_ids = np.reshape(store_poly, [iv[0], iv[1]])
         np.save(file_inter, poly_ids)
 
-
-    # Create an nc file with the transpose of the columns
+    # Create nc file with the transpose of the columns
     poly_ids = np.load(file_inter)
     act_poly = np.zeros(shp_i[0])
     in_area = np.zeros([shp_i[0], shp_t[0]])
     x_vals = np.zeros([shp_i[0], shp_t[0]])
     y_vals = np.zeros([shp_i[0], shp_t[0]])
+    z_vals = np.zeros([shp_i[0], shp_t[0]])
+
     for t in range(0, shp_t[0]):
-        store_t = store_traj(tr_file, t)  # Time slice of trajectory
+        store_t = store_traj(list_dir['traj_file'], t)  # Time slice of trajectory
         xp = store_t['xp']
         yp = store_t['yp']
+        zp = store_t['yp']
         x = store_t['xp'].astype(int)
         y = store_t['yp'].astype(int)
-        act = store_t['active'].astype(int)
+        act = store_t['active'].astype(int)  # Note: I don't deactivate individuals, Ingrid suggests to do this;
         act_poly = act_poly + act
         poly_fid = poly_ids[y, x]
         idx_pid = (np.where(poly_fid > 0))
         in_area[idx_pid, t] = poly_fid[idx_pid]
         x_vals[:, t] = xp
         y_vals[:, t] = yp
+        z_vals[:, t] = zp
         print('t = ' + str(t) + ' of ' + str(shp_t[0]) + ' steps')
         print('Percent complete = ' + str(np.ceil((t/shp_t[0])*100)))
 
     act_poly = shp_t[0] - act_poly  # Index of activity
     list_start = np.unique(act_poly).astype(int)  # find starting points of each individual
-
     start_point = np.zeros(shp_i[0])
     for i in range(0, len(list_start)):
         id1 = list_start[i]
@@ -105,22 +73,25 @@ def store_regions(list_dir):
         in_polt = in_area[log_id1, id1:shp_t[0]]
         start_point[log_id1] = in_polt[:, 0]
 
-    nc_file = Dataset(reg_file, mode='w', format='NETCDF4_CLASSIC')
+    nc_file = Dataset(list_dir['reg_file'], mode='w', format='NETCDF4_CLASSIC')
 
     # Specify nc dimensions
     part_dim = nc_file.createDimension('particle', shp_i[0])
     time_dim = nc_file.createDimension('time', shp_t[0])
 
     # Create variable for storing presence/ absence in each region at each time:
-    in_region = nc_file.createVariable('in_region', np.int32, ('particle', 'time'))
     act_ind = nc_file.createVariable('act_part', np.int32, 'particle')
+    start_area = nc_file.createVariable('start', np.int32, 'particle')
+    in_region = nc_file.createVariable('in_region', np.int32, ('particle', 'time'))
     xv = nc_file.createVariable('xp', np.float32, ('particle', 'time'))
     yv = nc_file.createVariable('yp', np.float32, ('particle', 'time'))
-    start_area = nc_file.createVariable('start', np.int32, 'particle')
+    zv = nc_file.createVariable('zp', np.float32, ('particle', 'time'))
 
+    # Store data in nc variables
     act_ind[:] = act_poly
     xv[:] = x_vals
     yv[:] = y_vals
+    zv[:] = z_vals
     in_region[:] = in_area
     start_area[:] = start_point
 
@@ -149,26 +120,44 @@ def get_depth(list_dir):
     return
 
 
-def inpoly(x, y, poly1):
+def store_traj(tr_file, idv):
+    # netcdf4 library for extracting dataset
+    traj = nc.Dataset(tr_file)
+    depth = traj.variables['depth'][:]
+    dp = depth[:]  # get depth matrix
+    dp_size = np.shape(dp)  # Size of domain
+    idx = dp < 0  # Fill values
+    dp[idx] = np.nan  # Set fill values to invalid;
+    imax = dp_size[0]
+    jmax = dp_size[1]
+    times = traj.variables['time']
+    t_ids = np.shape(times)
+    dates = num2date(times[idv], times.units)
+    x, y, z = (np.array(traj.variables['x'][idv, :]), np.array(traj.variables['y'][idv, :]),
+               np.array(traj.variables['z'][idv, :]))
+    act = np.array(traj.variables['active'][idv, :])
+
+    # Store outputs in a dictionary (similar to a structure)
+    store = dict([('imax', imax), ('jmax', jmax), ('depth', dp), ('active', act), ('xp', x), ('yp', y),
+                  ('zp', z), ('time', dates), ('t_id', t_ids)])
+    traj.close()
+    return store
+
+
+def in_poly(x, y, poly1):
     lat, lon = geo2grid(x, y, 'get_bl')  # Convert to geographic coordinates
-    # Create geodataframe from numpy arrays
-    gdf = gpd.GeoDataFrame(geometry=gpd.GeoSeries.from_xy(lon, lat))
-    polya = gpd.GeoDataFrame(poly1)
-    gdf.crs = polya.crs
-    in_pol = gpd.tools.sjoin(gdf, polya, predicate="within", how='left')
-    in_idx = np.where(in_pol.index_right > -1)
-    p_id = np.zeros(np.shape(x))
-    p_id[in_idx[0]] = 1
+    gdf = gpd.GeoDataFrame(geometry=gpd.GeoSeries.from_xy(lon, lat))  # Create Geo dataframe from positional data
+    polya = gpd.GeoDataFrame(poly1)  # Geo dataframe from polygon data
+    gdf.crs = polya.crs  # Make sure we use the same projections for both
+    in_pol = gpd.tools.sjoin(gdf, polya, predicate="within", how='left')  # Check points are in polygon
+    in_idx = np.where(in_pol.index_right > -1)  # Find all values in the polygon
+    p_id = np.zeros(np.shape(x))  # Initialize vector for storage
+    p_id[in_idx[0]] = 1  # Store as ones
     return p_id
 
 
-def read_ssmu(shp_file):
+def read_shape(shp_file):
     shape_p = gpd.read_file(shp_file)
-    # print(shape.boundary)
-    # pl = shape.plot()
-    # pl.imshow()
-    #
-    # print(shape[:17])
     return shape_p
 
 
@@ -251,22 +240,3 @@ def geo2grid(lat, lon, case):
             ys[i] = y / (dx * 1000)
 
     return xs, ys
-
-
-def region_part(reg_file):
-    nc_file = nc.Dataset(reg_file, mode='r', format='NETCDF4_CLASSIC')
-    start_id = nc_file['start'][:]
-    subs_so = (start_id == 9) | (start_id == 10) | (start_id == 11)
-    subs_wap = (start_id == 2) | (start_id == 3) | (start_id == 4) | (start_id == 5) | (start_id == 6) | (start_id == 7)
-    subs_eap = (start_id == 17)
-    subs_apa = (start_id == 1)
-    subs_sopa = (start_id == 8)
-    area_idx = dict([('SO', subs_so), ('WAP', subs_wap), ('EAP', subs_eap), ('APP', subs_apa), ('SOP', subs_sopa)])
-    nc_file.close()
-    return area_idx
-#     #% !(AP: 1:APPA; 2: APW; 3: DPW; 4: DPE; 5: BSW; 6:BSE; 7: EI; 17: APE)
-#     #% !(SOI: 8: SOPA; 9: SOW; 10:SONE; 11: SOSE)
-#     #% !(SG: 12: SGPA; 13: SGW; 14:SGE)
-#     #% !(SSI: 15: SSPA; 16: SSI)
-#     return
-#

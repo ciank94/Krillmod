@@ -1,4 +1,0 @@
-Simulation summary: 
-Start datetime (dd.mm.yyyy) = 01.01.2016, 00:00:00
-End datetime (dd.mm.yyyy) = 01.05.2016, 00:00:00
-Time frame = 121 days and 0.0 hours 

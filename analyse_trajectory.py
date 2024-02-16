@@ -1,7 +1,5 @@
-import os
 import numpy as np
 import netCDF4 as nc
-import xarray as xr
 
 
 def sim_account(store):
@@ -32,10 +30,7 @@ def sim_account(store):
 
 
 def particle_visits(reg_file, sv_dir, tr_folder, depth_file):
-    from Krillmod.get_trajectory import region_part
-
     depth = np.load(depth_file)
-
     # Trajectory data reformatted:
     nc_file = nc.Dataset(reg_file, mode='r', format='NETCDF4_CLASSIC')
     area_idx = region_part(reg_file)
@@ -80,7 +75,6 @@ def particle_visits(reg_file, sv_dir, tr_folder, depth_file):
 
 
 def retention_part(reg_file, time_file, sv_dir, tr_folder):
-    from Krillmod.get_trajectory import region_part
     # Trajectory data reformatted:
     nc_file = nc.Dataset(reg_file, mode='r', format='NETCDF4_CLASSIC')
     area_idx = region_part(reg_file)
@@ -119,6 +113,24 @@ def retention_part(reg_file, time_file, sv_dir, tr_folder):
         np.save(file1, store_t)
     nc_file.close()
     return
+
+
+def region_part(reg_file):
+    nc_file = nc.Dataset(reg_file, mode='r', format='NETCDF4_CLASSIC')
+    start_id = nc_file['start'][:]
+    subs_so = (start_id == 9) | (start_id == 10) | (start_id == 11)
+    subs_wap = (start_id == 2) | (start_id == 3) | (start_id == 4) | (start_id == 5) | (start_id == 6) | (start_id == 7)
+    subs_eap = (start_id == 17)
+    subs_apa = (start_id == 1)
+    subs_sopa = (start_id == 8)
+    area_idx = dict([('SO', subs_so), ('WAP', subs_wap), ('EAP', subs_eap), ('APP', subs_apa), ('SOP', subs_sopa)])
+    nc_file.close()
+    return area_idx
+#     #% !(AP: 1:APPA; 2: APW; 3: DPW; 4: DPE; 5: BSW; 6:BSE; 7: EI; 17: APE)
+#     #% !(SOI: 8: SOPA; 9: SOW; 10:SONE; 11: SOSE)
+#     #% !(SG: 12: SGPA; 13: SGW; 14:SGE)
+#     #% !(SSI: 15: SSPA; 16: SSI)
+#     return
 
 
 

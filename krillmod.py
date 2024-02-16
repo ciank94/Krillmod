@@ -1,19 +1,15 @@
 # master file for krill model analysis
-import numpy as np
-from Krillmod.import_settings import store_folders, store_files
+from Krillmod.import_settings import init_folders
+list_dir = init_folders()  # Setup target folders for processing and analysis
+
+
+
+
 from Krillmod.get_trajectory import store_traj
 from Krillmod.analyse_trajectory import retention_part, particle_visits
 from Krillmod.plot_trajectory import plot_retention, plot_dom_paths
 
-shape_folder = 'C:/Users/ciank/PycharmProjects/sinmod/Krillmod/ssmu/'  # Directory where the shape files are stored
-traj_folder = 'A:/Cian_sinmod/meeso_sim/sim_'  # Directory where the trajectory file is stored
-save_folder = 'C:/Users/ciank/PycharmProjects/sinmod/Krillmod/results/'# Directory where data will be saved
-sim_folder = '2017'
-shape_name = 'ssmusPolygon.shp'
 
-# Stores directories in a dictionary
-list_dir = store_folders(sim_folder, shape_name, shape_folder, save_folder, traj_folder)
-list_dir = store_files(list_dir)
 
 # for sim_folder in ['2016', '2017', '2018', '2019']:
 
