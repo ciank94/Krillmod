@@ -2,6 +2,55 @@ import numpy as np
 import netCDF4 as nc
 
 
+def particle_visits(list_dir):
+    depth = np.load(list_dir['depth_file'])
+    # Trajectory data reformatted:
+    nc_file = nc.Dataset(list_dir['reg_file'], mode='r', format='NETCDF4_CLASSIC')
+    area_idx = region_part(list_dir['reg_file'])
+
+    #Modify function to accept a subset of particles generally- rather than just area indices;
+    key_list = list(area_idx.keys())
+    print(key_list)
+
+    for area_name in key_list:
+        idv = (area_idx[area_name])
+        df = np.zeros(np.shape(depth))
+        df[np.isnan(depth)] = np.nan
+        df2 = np.zeros(np.shape(depth))
+        df2[np.isnan(depth)] = np.nan
+        x = nc_file['xp'][idv, :].astype(int)
+        y = nc_file['yp'][idv, :].astype(int)
+        for i in range(0, np.shape(x)[0]):
+            yi = y[i, :]
+            xi = x[i, :]
+            df[yi, xi] = df[yi, xi] + 1
+        #    for j in range(0, np.shape(xi)[0]):
+        #        df2[yi[j], xi[j]] = df2[yi[j], xi[j]] + 1
+
+        df[df > 0] = ((df[df > 0])/np.shape(x)[0])*100
+
+        file1 = list_dir['save_folder'] + list_dir['sim_folder'] + '/' + area_name + '_dom_paths.npy'
+        #file2 = list_dir['save_folder'] + list_dir['sim_folder'] + '/' + area_name + '_total_visits.npy'
+        #file3 = list_dir['save_folder'] + list_dir['sim_folder'] + '/' + area_name + '_n_parts.txt'
+
+        print('Saving ' + area_name + ' visits')
+
+        # Save matrices to intermediate file;
+        np.save(file1, df)
+        # np.save(file2, df2)
+        #
+        # # Save unique particle number in region:
+        # line1 = 'Number of particles in ' + area_name + ' region: \n'
+        # line2 = str(np.shape(x)[0])
+        # f = open(file3, 'w')
+        # f.writelines(line1)
+        # f.writelines(line2)
+        # f.close()
+
+    nc_file.close()  # close nc file
+    return
+
+
 def sim_account(store):
     # Note: Adapt this file for  new data storage
     shp = np.shape(store['xp'])
@@ -26,51 +75,6 @@ def sim_account(store):
     f.writelines(top_line)
     f.writelines(time_lines)
     f.close()
-    return
-
-
-def particle_visits(reg_file, sv_dir, tr_folder, depth_file):
-    depth = np.load(depth_file)
-    # Trajectory data reformatted:
-    nc_file = nc.Dataset(reg_file, mode='r', format='NETCDF4_CLASSIC')
-    area_idx = region_part(reg_file)
-    key_list = list(area_idx.keys())
-    print(key_list)
-
-    for area_name in key_list:
-        idv = (area_idx[area_name])
-        df = np.zeros(np.shape(depth))
-        df[np.isnan(depth)] = np.nan
-        df2 = np.zeros(np.shape(depth))
-        df2[np.isnan(depth)] = np.nan
-        x = nc_file['xp'][idv, :].astype(int)
-        y = nc_file['yp'][idv, :].astype(int)
-        for i in range(0, np.shape(x)[0]):
-            yi = y[i, :]
-            xi = x[i, :]
-            df[yi, xi] = df[yi, xi] + 1
-            for j in range(0, np.shape(xi)[0]):
-                df2[yi[j], xi[j]] = df2[yi[j], xi[j]] + 1
-
-        file1 = sv_dir + tr_folder + '/' + area_name + '_dom_paths.npy'
-        file2 = sv_dir + tr_folder + '/' + area_name + '_total_visits.npy'
-        file3 = sv_dir + tr_folder + '/' + area_name + '_n_parts.txt'
-
-        print('Saving ' + area_name + ' visits')
-
-        # Save matrices to intermediate file;
-        np.save(file1, df)
-        np.save(file2, df2)
-
-        # Save unique particle number in region:
-        line1 = 'Number of particles in ' + area_name + ' region: \n'
-        line2 = str(np.shape(x)[0])
-        f = open(file3, 'w')
-        f.writelines(line1)
-        f.writelines(line2)
-        f.close()
-
-    nc_file.close()  # close nc file
     return
 
 
@@ -118,12 +122,13 @@ def retention_part(reg_file, time_file, sv_dir, tr_folder):
 def region_part(reg_file):
     nc_file = nc.Dataset(reg_file, mode='r', format='NETCDF4_CLASSIC')
     start_id = nc_file['start'][:]
-    subs_so = (start_id == 9) | (start_id == 10) | (start_id == 11)
+    #subs_so = (start_id == 9) | (start_id == 10) | (start_id == 11)
     subs_wap = (start_id == 2) | (start_id == 3) | (start_id == 4) | (start_id == 5) | (start_id == 6) | (start_id == 7)
-    subs_eap = (start_id == 17)
-    subs_apa = (start_id == 1)
-    subs_sopa = (start_id == 8)
-    area_idx = dict([('SO', subs_so), ('WAP', subs_wap), ('EAP', subs_eap), ('APP', subs_apa), ('SOP', subs_sopa)])
+    #subs_eap = (start_id == 17)
+    #subs_apa = (start_id == 1)
+    #subs_sopa = (start_id == 8)
+    #area_idx = dict([('SO', subs_so), ('WAP', subs_wap), ('EAP', subs_eap), ('APP', subs_apa), ('SOP', subs_sopa)])
+    area_idx = dict([('WAP', subs_wap)])
     nc_file.close()
     return area_idx
 #     #% !(AP: 1:APPA; 2: APW; 3: DPW; 4: DPE; 5: BSW; 6:BSE; 7: EI; 17: APE)

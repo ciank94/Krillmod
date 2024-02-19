@@ -1,7 +1,12 @@
 # master file for krill model analysis
 from Krillmod.import_settings import init_folders
-list_dir = init_folders()  # Setup target folders for processing and analysis
+from Krillmod.analyse_trajectory import particle_visits
 
+# Reformat trajectory data and setup target folders:
+list_dir = init_folders()
+
+# Analyse trajectories
+particle_visits(list_dir)
 
 
 

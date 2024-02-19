@@ -34,11 +34,11 @@ def store_files(list_dir):
     list_dir['depth_file'] = list_dir['save_folder'] + list_dir['sim_folder'] + '/depth.npy'
 
     if not os.path.exists(list_dir['shape_file']):
-        print('Error: Directory "' + list_dir['shape_file'] + '" does not exist')
+        print('Error: Directory "' + list_dir['shape_file'] + '" does not exist\nCheck connection to directory')
         sys.exit()
 
     if not os.path.exists(list_dir['traj_file']):
-        print('Error: Directory "' + list_dir['traj_file'] + '" does not exist')
+        print('Error: Directory "' + list_dir['traj_file'] + '" does not exist\nCheck connection to directory')
         sys.exit()
 
     if not os.path.exists(list_dir['save_folder'] + list_dir['sim_folder']):
