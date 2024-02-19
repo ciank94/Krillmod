@@ -204,125 +204,76 @@ def add_latlon(idxlimx, idxlimy):
     return
 
 
-def plot_dom_paths(tr_folder, reg_file, sv_dir):
-    depth_file = sv_dir + tr_folder + '/depth.npy'
+def plot_dom_paths(list_dir):
+    depth_file = list_dir['save_folder'] + list_dir['sim_folder'] + '/depth.npy'
     depth = np.load(depth_file)
-
-
-    from Krillmod.get_trajectory import region_part
-    area_idx = region_part(reg_file)
+    from analyse_trajectory import region_part
+    area_idx = region_part(list_dir['reg_file'])
     key_list = list(area_idx.keys())
     for area_name in key_list:
-        dom_file = sv_dir + tr_folder + '/' + area_name + '_dom_paths.npy'
-        tot_file = sv_dir + tr_folder + '/' + area_name + '_total_visits.npy'
-        for i in range(0, 2):
-            if i == 1:
-                cmax = 2
-                crange = 0.1
-            else:
-                cmax = 0.01
-                crange = 0.001
-
-            if area_name == 'WAP':
-                idxlimx = [100, 500]
-                idxlimy = [250, 650]
-                so_nparts = 45621
-            if area_name == 'SO':
-                idxlimx = [300, 600]
-                idxlimy = [400, 700]
-                so_nparts = 12221
-            if area_name == 'APP':
-                idxlimx = [100, 500]
-                idxlimy = [250, 650]
-                so_nparts = 122452
-            if area_name == 'EAP':
-                idxlimx = [100, 500]
-                idxlimy = [250, 650]
-                so_nparts = 17061
-            if area_name == 'SOP':
-                idxlimx = [300, 600]
-                idxlimy = [400, 700]
-                so_nparts = 66792
+        dom_file = list_dir['save_folder'] + list_dir['sim_folder'] + '/' + area_name + '_dom_paths.npy'
+        #tot_file = sv_dir + tr_folder + '/' + area_name + '_total_visits.npy'
+        cmax = 2
+        crange = 0.1
+        if area_name == 'WAP':
+            idxlimx = [100, 500]
+            idxlimy = [250, 650]
+            so_nparts = 45621
+        if area_name == 'SO':
+            idxlimx = [300, 600]
+            idxlimy = [400, 700]
+            so_nparts = 12221
+        if area_name == 'APP':
+            idxlimx = [100, 500]
+            idxlimy = [250, 650]
+            so_nparts = 122452
+        if area_name == 'EAP':
+            idxlimx = [100, 500]
+            idxlimy = [250, 650]
+            so_nparts = 17061
+        if area_name == 'SOP':
+            idxlimx = [300, 600]
+            idxlimy = [400, 700]
+            so_nparts = 66792
             #     cmax_dom = np.max(df[df > 0])/3
             #     cmax_vis = np.max(df2[df2 > 0]) / 6
             #Load dataframe from file
-            if i == 1:
-                df = np.load(dom_file)
-                depth[np.isnan(depth)] = -35000
-                df[depth < 0] = np.nan
-                df[df>0] = (df[df>0]/so_nparts)*100
-
-                fig, ax = plt.subplots()
-                params = {'axes.labelsize': 12, 'axes.titlesize': 12, 'legend.fontsize': 12,
+        df = np.load(dom_file)
+        depth[np.isnan(depth)] = -35000
+        df[depth < 0] = np.nan
+        fig, ax = plt.subplots()
+        params = {'axes.labelsize': 12, 'axes.titlesize': 12, 'legend.fontsize': 12,
                           'xtick.labelsize': 12, 'ytick.labelsize': 12}
-                plt.rcParams['font.sans-serif'] = "Times New Roman"
+        plt.rcParams['font.sans-serif'] = "Times New Roman"
                 #plt.rc('font', size=12)
 
                 #Dominant pathways
-                cmap1 = plt.get_cmap('OrRd')  # Oranges, Reds- sequential coolwarm= divergent, jet, seismic
-                cmap2 = plt.get_cmap('gray')
-                land_plot = ax.contourf(depth,levels= [-40000,-20000],extend='both',cmap=cmap2)
-                depth_plot = ax.contour(depth, np.linspace(0, 1500, 4), extend='both', colors='k', alpha=0.15)
-                data_plot = ax.contourf(df,levels=np.arange(0, cmax, crange),extend='both',cmap=cmap1)
+        cmap1 = plt.get_cmap('OrRd')  # Oranges, Reds- sequential coolwarm= divergent, jet, seismic
+        cmap2 = plt.get_cmap('gray')
+        land_plot = ax.contourf(depth,levels= [-40000,-20000],extend='both',cmap=cmap2)
+        depth_plot = ax.contour(depth, np.linspace(0, 1500, 4), extend='both', colors='k', alpha=0.15)
+        data_plot = ax.contourf(df,levels=np.arange(0, cmax, crange),extend='both',cmap=cmap1)
                 #
             #levels=np.linspace(0,cmax,10)
-                add_latlon(idxlimx, idxlimy)
-                plt.ylim([idxlimy[0], idxlimy[1]])
-                plt.xlim([idxlimx[0], idxlimx[1]])
-                plt.grid(alpha=0.45)
+        add_latlon(idxlimx, idxlimy)
+        plt.ylim([idxlimy[0], idxlimy[1]])
+        plt.xlim([idxlimx[0], idxlimx[1]])
+        plt.grid(alpha=0.45)
 
-                divider = make_axes_locatable(ax)
-                ax_cb = divider.new_horizontal(size="3%", pad=0.05, axes_class=plt.Axes)
-                fig.add_axes(ax_cb)
-                cbar = plt.colorbar(data_plot, cax=ax_cb)
-                cbar.ax.set_ylabel('Probability (%)', loc='center', size=12.5, weight='bold')
-                cbar.ax.tick_params(labelsize=9,rotation=0)
-                ax.tick_params(axis='x', labelsize=12)
-                ax.tick_params(axis='y', labelsize=12)
+        divider = make_axes_locatable(ax)
+        ax_cb = divider.new_horizontal(size="3%", pad=0.05, axes_class=plt.Axes)
+        fig.add_axes(ax_cb)
+        cbar = plt.colorbar(data_plot, cax=ax_cb)
+        cbar.ax.set_ylabel('Probability (%)', loc='center', size=12.5, weight='bold')
+        cbar.ax.tick_params(labelsize=9,rotation=0)
+        ax.tick_params(axis='x', labelsize=12)
+        ax.tick_params(axis='y', labelsize=12)
                 #plt.rcParams.update(params)
                 #plt.show()
-                file = sv_dir + tr_folder + '/' + area_name + '_dom_paths.svg'
-                plt.savefig(file)
-            else:
-                df = np.load(tot_file)
-                depth[np.isnan(depth)] = -35000
-                df[depth < 0] = np.nan
-                df[df > 0] = (df[df > 0] / np.sum(df[df > 0])) * 100
-
-                fig, ax = plt.subplots()
-                params = {'axes.labelsize': 12, 'axes.titlesize': 12, 'legend.fontsize': 12,
-                          'xtick.labelsize': 12, 'ytick.labelsize': 12}
-                plt.rcParams['font.sans-serif'] = "Times New Roman"
-                # plt.rc('font', size=12)
-
-                # Dominant pathways
-                cmap1 = plt.get_cmap('Blues')  # Oranges, Reds- sequential coolwarm= divergent, jet, seismic
-                cmap2 = plt.get_cmap('gray')
-                land_plot = ax.contourf(depth, levels=[-40000, -20000], extend='both', cmap=cmap2)
-                depth_plot = ax.contour(depth, np.linspace(0, 1500, 4), extend='both', colors='k', alpha=0.15)
-                data_plot = ax.contourf(df, levels=np.arange(0, cmax, crange), extend='both', cmap=cmap1)
-                #
-                # levels=np.linspace(0,cmax,10)
-                add_latlon(idxlimx, idxlimy)
-                plt.ylim([idxlimy[0], idxlimy[1]])
-                plt.xlim([idxlimx[0], idxlimx[1]])
-                plt.grid(alpha=0.45)
-
-                divider = make_axes_locatable(ax)
-                ax_cb = divider.new_horizontal(size="3%", pad=0.05, axes_class=plt.Axes)
-                fig.add_axes(ax_cb)
-                cbar = plt.colorbar(data_plot, cax=ax_cb)
-                cbar.ax.set_ylabel('Probability (%)', loc='center', size=12.5, weight='bold')
-                cbar.ax.tick_params(labelsize=9, rotation=0)
-                ax.tick_params(axis='x', labelsize=12)
-                ax.tick_params(axis='y', labelsize=12)
-                # plt.rcParams.update(params)
-                # plt.show()
-                file = sv_dir + tr_folder + '/' + area_name + '_tot_visits.svg'
-                plt.savefig(file)
-            plt.close(fig)
-
-    return fig
+        file = list_dir['save_folder'] + list_dir['sim_folder'] + '/' + area_name + '_dom_paths.svg'
+        plt.savefig(file)
+        plt.close(fig)
+    return
 
 
 def get_frame_as_image(fig):
