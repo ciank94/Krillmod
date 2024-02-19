@@ -36,6 +36,10 @@ def particle_visits(list_dir):
         print('Saving ' + area_name + ' visits')
 
         # Save matrices to intermediate file;
+
+        # For any particle visiting a region; did it previously visit others?
+        # Did it pass through different areas? Test on saga; Copy files to saga
+        #load python packages; use module load netcdf4 python; scipy; numpy; module purge; then module load;
         np.save(file1, df)
         # np.save(file2, df2)
         #

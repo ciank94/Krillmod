@@ -3,14 +3,34 @@ import os
 import sys
 
 
-def init_folders():
-    # Name directories here
-    shape_folder = 'C:/Users/ciank/PycharmProjects/sinmod/Krillmod/ssmu/'  # Directory where the shape files are stored
-    traj_folder = 'A:/Cian_sinmod/meeso_sim/sim_'  # Directory where the trajectory file is stored
-    save_folder = 'C:/Users/ciank/PycharmProjects/sinmod/Krillmod/results/'  # Directory where data will be saved
-    sim_folder = '2016'
-    shape_name = 'ssmusPolygon.shp'
+def locate_folders():
+    comp_node = 'local'
 
+    # Name directories here
+    if comp_node == 'local':
+        shape_folder = 'C:/Users/ciank/PycharmProjects/sinmod/Krillmod/ssmu/'  # Directory where the shape files are stored
+        traj_folder = 'A:/Cian_sinmod/meeso_sim/sim_'  # Directory where the trajectory file is stored
+        save_folder = 'C:/Users/ciank/PycharmProjects/sinmod/Krillmod/results/'  # Directory where data will be saved
+        sim_folder = '2017'
+        shape_name = 'ssmusPolygon.shp'
+        dir_name = init_folders(sim_folder, shape_name, shape_folder, save_folder, traj_folder)
+    elif comp_node == 'saga':
+        shape_folder = '/cluster/projects/nn9828k/Cian_sinmod/python/Krillmod/ssmu/'  # Directory where the shape files are stored
+        traj_folder = '/cluster/projects/nn9828k/Cian_sinmod/meeso_sim/sim_'  # Directory where the trajectory file is stored
+        save_folder = '/cluster/projects/nn9828k/Cian_sinmod/python/Krillmod/results/'  # Directory where data will be saved
+        sim_folder = '2016'
+        shape_name = 'ssmusPolygon.shp'
+        dir_name = init_folders(sim_folder, shape_name, shape_folder, save_folder, traj_folder)
+    else:
+        print('Error: computation node not specified')
+        dir_name = []
+
+    list_dir = dir_name
+
+    return list_dir
+
+
+def init_folders(sim_folder, shape_name, shape_folder, save_folder, traj_folder):
     # Stores directories in a dictionary
     list_dir = store_folders(sim_folder, shape_name, shape_folder, save_folder, traj_folder)
     list_dir = store_files(list_dir)
