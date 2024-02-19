@@ -69,7 +69,10 @@ def store_regions(list_dir):
         id1 = list_start[i]
         log_id1 = act_poly == id1
         in_polt = in_area[log_id1, id1:shp_t[0]]
-        start_point[log_id1] = in_polt[:, 0]
+        if np.shape(in_polt)[0] <= 0:
+            print('Empty start areas ' + str(np.shape(in_polt)))
+        else:
+            start_point[log_id1] = in_polt[:, 0]
 
     nc_file = Dataset(list_dir['reg_file'], mode='w', format='NETCDF4_CLASSIC')
 
