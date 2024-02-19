@@ -40,11 +40,11 @@ def store_regions(list_dir):
 
     # Create nc file with the transpose of the columns
     poly_ids = np.load(file_inter)
-    act_poly = np.empty(shp_i[0], dtype=int)
-    in_area = np.empty([shp_i[0], shp_t[0]], dtype=int)
-    x_vals = np.empty([shp_i[0], shp_t[0]], dtype=int)
-    y_vals = np.empty([shp_i[0], shp_t[0]], dtype=int)
-    z_vals = np.empty([shp_i[0], shp_t[0]], dtype=int)
+    act_poly = np.empty(shp_i[0], dtype=np.int16)
+    in_area = np.empty([shp_i[0], shp_t[0]], dtype=np.int16)
+    x_vals = np.empty([shp_i[0], shp_t[0]], dtype=np.int16)
+    y_vals = np.empty([shp_i[0], shp_t[0]], dtype=np.int16)
+    z_vals = np.empty([shp_i[0], shp_t[0]], dtype=np.int16)
 
     for t in range(0, shp_t[0]):
         store_t = store_traj(list_dir['traj_file'], t)  # Time slice of trajectory
@@ -78,12 +78,12 @@ def store_regions(list_dir):
     time_dim = nc_file.createDimension('time', shp_t[0])
 
     # Create variable for storing presence/ absence in each region at each time:
-    act_ind = nc_file.createVariable('act_part', np.int32, 'particle')
-    start_area = nc_file.createVariable('start', np.int32, 'particle')
-    in_region = nc_file.createVariable('in_region', np.int32, ('particle', 'time'))
-    xv = nc_file.createVariable('xp', np.int32, ('particle', 'time'))
-    yv = nc_file.createVariable('yp', np.int32, ('particle', 'time'))
-    zv = nc_file.createVariable('zp', np.int32, ('particle', 'time'))
+    act_ind = nc_file.createVariable('act_part', np.int16, 'particle')
+    start_area = nc_file.createVariable('start', np.int16, 'particle')
+    in_region = nc_file.createVariable('in_region', np.int16, ('particle', 'time'))
+    xv = nc_file.createVariable('xp', np.int16, ('particle', 'time'))
+    yv = nc_file.createVariable('yp', np.int16, ('particle', 'time'))
+    zv = nc_file.createVariable('zp', np.int16, ('particle', 'time'))
 
     # Store data in nc variables
     act_ind[:] = act_poly
