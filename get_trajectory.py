@@ -40,27 +40,25 @@ def store_regions(list_dir):
 
     # Create nc file with the transpose of the columns
     poly_ids = np.load(file_inter)
-    act_poly = np.zeros(shp_i[0])
-    in_area = np.zeros([shp_i[0], shp_t[0]])
-    x_vals = np.zeros([shp_i[0], shp_t[0]])
-    y_vals = np.zeros([shp_i[0], shp_t[0]])
-    z_vals = np.zeros([shp_i[0], shp_t[0]])
+    act_poly = np.empty(shp_i[0], dtype=int)
+    in_area = np.empty([shp_i[0], shp_t[0]], dtype=int)
+    x_vals = np.empty([shp_i[0], shp_t[0]], dtype=int)
+    y_vals = np.empty([shp_i[0], shp_t[0]], dtype=int)
+    z_vals = np.empty([shp_i[0], shp_t[0]], dtype=int)
 
     for t in range(0, shp_t[0]):
         store_t = store_traj(list_dir['traj_file'], t)  # Time slice of trajectory
-        xp = store_t['xp']
-        yp = store_t['yp']
-        zp = store_t['yp']
         x = store_t['xp'].astype(int)
         y = store_t['yp'].astype(int)
+        z = store_t['zp'].astype(int)
         act = store_t['active'].astype(int)  # Note: I don't deactivate individuals, Ingrid suggests to do this;
         act_poly = act_poly + act
         poly_fid = poly_ids[y, x]
         idx_pid = (np.where(poly_fid > 0))
         in_area[idx_pid, t] = poly_fid[idx_pid]
-        x_vals[:, t] = xp
-        y_vals[:, t] = yp
-        z_vals[:, t] = zp
+        x_vals[:, t] = x
+        y_vals[:, t] = y
+        z_vals[:, t] = z
         print('t = ' + str(t) + ' of ' + str(shp_t[0]) + ' steps')
         print('Percent complete = ' + str(np.ceil((t/shp_t[0])*100)))
 
@@ -83,9 +81,9 @@ def store_regions(list_dir):
     act_ind = nc_file.createVariable('act_part', np.int32, 'particle')
     start_area = nc_file.createVariable('start', np.int32, 'particle')
     in_region = nc_file.createVariable('in_region', np.int32, ('particle', 'time'))
-    xv = nc_file.createVariable('xp', np.float32, ('particle', 'time'))
-    yv = nc_file.createVariable('yp', np.float32, ('particle', 'time'))
-    zv = nc_file.createVariable('zp', np.float32, ('particle', 'time'))
+    xv = nc_file.createVariable('xp', np.int32, ('particle', 'time'))
+    yv = nc_file.createVariable('yp', np.int32, ('particle', 'time'))
+    zv = nc_file.createVariable('zp', np.int32, ('particle', 'time'))
 
     # Store data in nc variables
     act_ind[:] = act_poly
