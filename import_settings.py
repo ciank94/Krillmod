@@ -1,4 +1,4 @@
-from Krillmod.get_trajectory import store_regions, get_depth, get_times
+from get_trajectory import store_regions, get_depth, get_times
 import os
 import sys
 

@@ -1,5 +1,5 @@
 # master file for krill model analysis
-from Krillmod.import_settings import locate_folders
+from import_settings import locate_folders
 from Krillmod.analyse_trajectory import particle_visits
 
 # Reformat trajectory data and setup target folders:
