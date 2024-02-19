@@ -22,6 +22,9 @@ Each key can be accessed using ``store[key]``, for example,
 stored with units 'days since', for example: ``units: days since 2016-01-01 00:00:00``. For more information on accessing data from netcdf files using netcdf4, see examples: 
 https://github.com/Unidata/netcdf4-python/blob/master/examples/reading_netCDF.ipynb.
 
+We create one large netcdf file regions.nc which transposes original file to particles x time (p x t) and 
+adds vector with indexes for time and region they begin
+
 Function ``single_traj`` accesses a single time slice of the trajectories using the store dictionary defined in store_traj above.
 extracts a single trajectory slice in time based on the index ``idx`` [TODO: Intermediate step: find idx based on time range]:
 ```python
@@ -36,7 +39,7 @@ _Output:_
 Function ``read_ssmu`` is used for accessing polygon data from shapefiles using geopandas. It stores information on subunits file  in the Southern Ocean defining important regions for krill predators. It assumes the 
 ``.shp`` file is in the same folder as the ``.shx`` file required. Shapefiles courtesy of https://github.com/ccamlr/data.
 ```python
-shp_file = A:/ssmu/ssmusPolygon.shp'
+shp_file = 'A:/ssmu/ssmusPolygon.shp'
 shape = read_ssmu(shp_file)
 print(shape[:5])
 ```
