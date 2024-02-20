@@ -4,33 +4,50 @@ import sys
 import os
 
 
-def particle_visits(list_dir, sub_idx):
-    # Load depth file and region file:
-    depth = np.load(list_dir['depth_file'])
-    nc_file = nc.Dataset(list_dir['reg_file'], mode='r', format='NETCDF4_CLASSIC')
-
+def lagrangian_analysis(list_dir, sub_idx):
+    # Arguments:
+    # list_dir: target directories for saving intermediate output files
+    # sub_idx: Dictionary with n keys each containing p x 1 boolean vectors with True for individuals subsetted
     # NOTE: Modify function to save keys in separate folders;
     # Also use subsets for all analysis at once to increase efficiency
     key_list = list(sub_idx.keys())
     print('Key list for analysis: ')
     print(key_list)
     for sub_key in key_list:
+        # Dominant pathways algorithm for subset of individuals (Van Sebille paper)
         dom_file = list_dir['save_folder'] + list_dir['sim_folder'] + '/' + sub_key + '_dom_paths.npy'
         if not os.path.exists(dom_file):
-            idv = (sub_idx[sub_key])
-            df = np.zeros(np.shape(depth))
-            df[np.isnan(depth)] = np.nan
-            x = nc_file['xp'][idv, :].astype(int)
-            y = nc_file['yp'][idv, :].astype(int)
-            for i in range(0, np.shape(x)[0]):
-                yi = y[i, :]
-                xi = x[i, :]
-                df[yi, xi] = df[yi, xi] + 1
-            df[df > 0] = ((df[df > 0])/np.shape(x)[0])*100
-            print('Saving ' + sub_key + ' visits')
-            np.save(dom_file, df)
+            dominant_paths(list_dir, sub_idx, sub_key, dom_file)
         else:
             print('Directory: ' + dom_file + ' already exists, skipping')
+        # Transit time distribution (Van Sebille mainly)
+        # transit_file = list_dir['save_folder'] + list_dir['sim_folder'] + '/' + sub_key + '_transit.npy'
+        # if not os.path.exists(transit_file):
+        #     transit_times(list_dir, sub_idx, sub_key, dom_file)
+        # else:
+        #     print('Directory: ' + dom_file + ' already exists, skipping')
+        # Finite-size Lyapunov exponent (FSLE)-
+        # (Bettencourt mainly: https://www.nature.com/articles/ngeo2570 & check email)
+        # Connectivity estimates;
+    return
+
+
+def dominant_paths(list_dir, sub_idx, sub_key, dom_file):
+    # Load depth file and region file:
+    depth = np.load(list_dir['depth_file'])
+    nc_file = nc.Dataset(list_dir['reg_file'], mode='r', format='NETCDF4_CLASSIC')
+    idv = (sub_idx[sub_key])
+    df = np.zeros(np.shape(depth))
+    df[np.isnan(depth)] = np.nan
+    x = nc_file['xp'][idv, :].astype(int)
+    y = nc_file['yp'][idv, :].astype(int)
+    for i in range(0, np.shape(x)[0]):
+        yi = y[i, :]
+        xi = x[i, :]
+        df[yi, xi] = df[yi, xi] + 1
+    df[df > 0] = ((df[df > 0]) / np.shape(x)[0]) * 100
+    print('Saving ' + sub_key + ' visits')
+    np.save(dom_file, df)
     nc_file.close()  # close nc file
     return
 
@@ -71,47 +88,6 @@ def sim_account(list_dir):
     return
 
 
-def retention_part(reg_file, time_file, sv_dir, tr_folder):
-    # Trajectory data reformatted:
-    nc_file = nc.Dataset(reg_file, mode='r', format='NETCDF4_CLASSIC')
-    area_idx = region_part(reg_file)
-    key_list = list(area_idx.keys())
-    time = np.load(time_file, allow_pickle=True)
-    for area_name in key_list:
-        idv = (area_idx[area_name])
-        x = nc_file['xp'][idv, :].astype(int)
-        reg_v = nc_file['in_region'][idv, :]
-        start_p = nc_file['act_part'][idv]
-        uniq_b = np.unique(start_p)
-        shp_b = np.shape(uniq_b)[0]
-        shp_t = np.shape(x)[1]
-        store_t = np.zeros([np.shape(start_p)[0], 2])
-        c = -1
-        for j in range(0, shp_b):
-            print(area_name + ': Percent complete = ' + str(np.ceil((j / shp_b) * 100)))
-            id_b = start_p == uniq_b[j]
-            reg_sim = reg_v[id_b, uniq_b[j]:shp_t]
-            b_it = np.shape(reg_sim)[0]
-            if j == 0:
-                reg_uniq = np.unique(reg_sim[:, 0])
-
-            for i in range(0, b_it):
-                c = c + 1
-                id_in = np.isin(reg_sim[i, :], reg_uniq)
-                id_f = np.where(id_in == False)
-                if len(id_f[0]) == 0:
-                    store_t[c, 0] = -1
-                else:
-                    dt = time[id_f[0][0]] - time[0]
-                    store_t[c, 0] = dt.days
-
-        store_t[:, 1] = start_p
-        file1 = sv_dir + tr_folder + '/' + area_name + '_retention_days.npy'
-        np.save(file1, store_t)
-    nc_file.close()
-    return
-
-
 def ssmu_start(reg_file):
     # Hard-coded indices for particles starting in ssmu's. This can be adapted for both time and region;
     # Below is the id number for each of the ssmu regions:
@@ -123,7 +99,7 @@ def ssmu_start(reg_file):
     nc_file = nc.Dataset(reg_file, mode='r', format='NETCDF4_CLASSIC')
     start_id = nc_file['start'][:]
     sub_idx = dict()
-    area_list = ['ALL']
+    area_list = ['SO']
     for reg_id in area_list:
         if reg_id == 'WAP':
             subs = np.arange(2, 7 + 1)
