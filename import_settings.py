@@ -46,8 +46,10 @@ def init_folders(comp_node, sim_folder, shape_name, shape_folder, save_folder, t
         if comp_node == 'local':
             os.mkdir(list_dir['save_folder'] + list_dir['sim_folder'])
         else:
-            os.system('mkdir' + list_dir['save_folder'])
-            os.system('mkdir' + list_dir['save_folder'] + list_dir['sim_folder'])
+            cmd = 'mkdir ' + list_dir['save_folder']
+            cmd2 = 'mkdir ' + list_dir['save_folder'] + list_dir['sim_folder']
+            os.system(cmd)
+            os.system(cmd2)
 
     if not os.path.exists(list_dir['time_file']):
         get_times(list_dir)  # Creates time file in folder
@@ -56,7 +58,9 @@ def init_folders(comp_node, sim_folder, shape_name, shape_folder, save_folder, t
         get_depth(list_dir)  # Creates depth file in folder
 
     if not (os.path.exists(list_dir['reg_file'])):
-        # Use try os.system(echo) or something of the sort  here;
+        if not comp_node == 'local':
+            cmd3 = 'echo ' + 'Note: Reformatting trajectory data for analysis'
+            os.system(cmd3)
         print('Note: Reformatting trajectory data for analysis')
         store_regions(list_dir)  # Creates intermediate file with trajectory and regional data
 
