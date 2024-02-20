@@ -1,84 +1,73 @@
 import numpy as np
 import netCDF4 as nc
+import sys
+import os
 
 
-def particle_visits(list_dir):
+def particle_visits(list_dir, sub_idx):
+    # Load depth file and region file:
     depth = np.load(list_dir['depth_file'])
-    # Trajectory data reformatted:
     nc_file = nc.Dataset(list_dir['reg_file'], mode='r', format='NETCDF4_CLASSIC')
-    area_idx = region_part(list_dir['reg_file'])
 
-    #Modify function to accept a subset of particles generally- rather than just area indices;
-    key_list = list(area_idx.keys())
+    # NOTE: Modify function to save keys in separate folders;
+    # Also use subsets for all analysis at once to increase efficiency
+    key_list = list(sub_idx.keys())
+    print('Key list for analysis: ')
     print(key_list)
-
-    for area_name in key_list:
-        idv = (area_idx[area_name])
-        df = np.zeros(np.shape(depth))
-        df[np.isnan(depth)] = np.nan
-        df2 = np.zeros(np.shape(depth))
-        df2[np.isnan(depth)] = np.nan
-        x = nc_file['xp'][idv, :].astype(int)
-        y = nc_file['yp'][idv, :].astype(int)
-        for i in range(0, np.shape(x)[0]):
-            yi = y[i, :]
-            xi = x[i, :]
-            df[yi, xi] = df[yi, xi] + 1
-        #    for j in range(0, np.shape(xi)[0]):
-        #        df2[yi[j], xi[j]] = df2[yi[j], xi[j]] + 1
-
-        df[df > 0] = ((df[df > 0])/np.shape(x)[0])*100
-
-        file1 = list_dir['save_folder'] + list_dir['sim_folder'] + '/' + area_name + '_dom_paths.npy'
-        #file2 = list_dir['save_folder'] + list_dir['sim_folder'] + '/' + area_name + '_total_visits.npy'
-        #file3 = list_dir['save_folder'] + list_dir['sim_folder'] + '/' + area_name + '_n_parts.txt'
-
-        print('Saving ' + area_name + ' visits')
-
-        # Save matrices to intermediate file;
-
-        # For any particle visiting a region; did it previously visit others?
-        # Did it pass through different areas? Test on saga; Copy files to saga
-        #load python packages; use module load netcdf4 python; scipy; numpy; module purge; then module load;
-        np.save(file1, df)
-        # np.save(file2, df2)
-        #
-        # # Save unique particle number in region:
-        # line1 = 'Number of particles in ' + area_name + ' region: \n'
-        # line2 = str(np.shape(x)[0])
-        # f = open(file3, 'w')
-        # f.writelines(line1)
-        # f.writelines(line2)
-        # f.close()
-
+    for sub_key in key_list:
+        dom_file = list_dir['save_folder'] + list_dir['sim_folder'] + '/' + sub_key + '_dom_paths.npy'
+        if not os.path.exists(dom_file):
+            idv = (sub_idx[sub_key])
+            df = np.zeros(np.shape(depth))
+            df[np.isnan(depth)] = np.nan
+            x = nc_file['xp'][idv, :].astype(int)
+            y = nc_file['yp'][idv, :].astype(int)
+            for i in range(0, np.shape(x)[0]):
+                yi = y[i, :]
+                xi = x[i, :]
+                df[yi, xi] = df[yi, xi] + 1
+            df[df > 0] = ((df[df > 0])/np.shape(x)[0])*100
+            print('Saving ' + sub_key + ' visits')
+            np.save(dom_file, df)
+        else:
+            print('Directory: ' + dom_file + ' already exists, skipping')
     nc_file.close()  # close nc file
     return
 
 
-def sim_account(store):
+def sim_account(list_dir):
     # Note: Adapt this file for  new data storage
-    shp = np.shape(store['xp'])
-    # x = np.array(store['xp'][0:shp[1], :])
-    # y = np.array(store['yp'][0:shp[1], :])
-
-    # Table with information:
-    # Particle information:
-    n_parts = shp[1]
-    date_0 = store['time'][0]
-    date_1 = store['time'][shp[0]-1]
-    timeframe = date_1 - date_0
-    start_date = 'Start datetime (dd.mm.yyyy) = ' + date_0.strftime("%d.%m.%Y, %H:%M:%S")
-    end_date = 'End datetime (dd.mm.yyyy) = ' + date_1.strftime("%d.%m.%Y, %H:%M:%S")
-    time_frame = 'Time frame = ' + str(timeframe.days) + ' days and ' + str(timeframe.seconds*1/(60*60)) + ' hours '
-    # Add time steps  here;
-    # Write to text file
-    file = 'C:/Users/ciank/PycharmProjects/sinmod/Krillmod/results/sim_summary.txt'
-    f = open(file, 'w')
-    top_line = ['Simulation summary: \n']
-    time_lines = [start_date + '\n', end_date + '\n', time_frame + '\n']
-    f.writelines(top_line)
-    f.writelines(time_lines)
-    f.close()
+    # Access regional file and look at number of particles, number of batches, individuals in each batch
+    summary_file = list_dir['save_folder'] + list_dir['sim_folder'] + '/sim_summary.txt'
+    if not os.path.exists(summary_file):
+        nc_file = nc.Dataset(list_dir['reg_file'], mode='r', format='NETCDF4_CLASSIC')
+        n_parts = np.shape(nc_file['xp'])[0]
+        uniq_id = np.unique(nc_file['act_part'][:])
+        n_releases = np.shape(uniq_id)[0]
+        n_per_batch = np.floor(n_parts/n_releases).astype(int)
+        time = np.load(list_dir['time_file'], allow_pickle=True)
+        shp = np.shape(time)
+        date_0 = time[0]
+        date_1 = time[shp[0]-1]
+        timeframe = date_1 - date_0
+        start_date = 'Start datetime (dd.mm.yyyy) = ' + date_0.strftime("%d.%m.%Y, %H:%M:%S")
+        end_date = 'End datetime (dd.mm.yyyy) = ' + date_1.strftime("%d.%m.%Y, %H:%M:%S")
+        time_frame = 'Time frame = ' + str(timeframe.days) + ' days and ' + str(timeframe.seconds*1/(60*60)) + ' hours '
+        f = open(summary_file, 'w')
+        top_line = ['Simulation summary: \n']
+        time_lines = [start_date + '\n', end_date + '\n', time_frame + '\n']
+        n_parts_line1 = ['Total number of particles: ' + str(n_parts) + '\n']
+        n_parts_line2 = ['Number of releases: ' + str(n_releases) + '\n']
+        n_parts_line3 = ['Number per release: ' + str(n_per_batch) + '\n']
+        f.writelines(top_line)
+        f.writelines(time_lines)
+        f.writelines(n_parts_line1)
+        f.writelines(n_parts_line2)
+        f.writelines(n_parts_line3)
+        f.close()
+        nc_file.close()  # close nc file
+    else:
+        print('Directory: ' + summary_file + ' already exists, skipping')
     return
 
 
@@ -123,23 +112,35 @@ def retention_part(reg_file, time_file, sv_dir, tr_folder):
     return
 
 
-def region_part(reg_file):
+def ssmu_start(reg_file):
+    # Hard-coded indices for particles starting in ssmu's. This can be adapted for both time and region;
+    # Below is the id number for each of the ssmu regions:
+    # !(AP: 1:APPA; 2: APW; 3: DPW; 4: DPE; 5: BSW; 6:BSE; 7: EI; 17: APE)
+    # !(SOI: 8: SOPA; 9: SOW; 10:SONE; 11: SOSE)
+    # !(SG: 12: SGPA; 13: SGW; 14:SGE)
+    # !(SSI: 15: SSPA; 16: SSI)
+
     nc_file = nc.Dataset(reg_file, mode='r', format='NETCDF4_CLASSIC')
     start_id = nc_file['start'][:]
-    #subs_so = (start_id == 9) | (start_id == 10) | (start_id == 11)
-    subs_wap = (start_id == 2) | (start_id == 3) | (start_id == 4) | (start_id == 5) | (start_id == 6) | (start_id == 7)
-    #subs_eap = (start_id == 17)
-    #subs_apa = (start_id == 1)
-    #subs_sopa = (start_id == 8)
-    #area_idx = dict([('SO', subs_so), ('WAP', subs_wap), ('EAP', subs_eap), ('APP', subs_apa), ('SOP', subs_sopa)])
-    area_idx = dict([('WAP', subs_wap)])
+    sub_idx = dict()
+    area_list = ['ALL']
+    for reg_id in area_list:
+        if reg_id == 'WAP':
+            subs = np.arange(2, 7 + 1)
+        elif reg_id == 'SO':
+            subs = np.arange(9, 11 + 1)
+        elif reg_id == 'SG':
+            subs = np.arange(12, 14 + 1)
+        elif reg_id == 'ALL':
+            subs = np.unique(start_id)
+        else:
+            print('Error: SSMU start area not specified')
+            sys.exit()
+        idx_in = np.isin(start_id, subs)  # Boolean vector of individuals in set
+        sub_idx[reg_id] = idx_in  # Set key to dictionary
     nc_file.close()
-    return area_idx
-#     #% !(AP: 1:APPA; 2: APW; 3: DPW; 4: DPE; 5: BSW; 6:BSE; 7: EI; 17: APE)
-#     #% !(SOI: 8: SOPA; 9: SOW; 10:SONE; 11: SOSE)
-#     #% !(SG: 12: SGPA; 13: SGW; 14:SGE)
-#     #% !(SSI: 15: SSPA; 16: SSI)
-#     return
+    return sub_idx
+
 
 
 

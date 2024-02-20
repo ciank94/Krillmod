@@ -1,12 +1,12 @@
-import cartopy.crs as ccrs
-import cartopy.feature as cfeature
+#import cartopy.crs as ccrs
+#import cartopy.feature as cfeature
 import matplotlib.pyplot as plt
 import numpy as np
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from mpl_toolkits.basemap import Basemap
 #from Krillmod.get_trajectory import geo2grid, store_traj
 #from Krillmod.import_settings import tr_file
-from io import BytesIO
+#from io import BytesIO
 
 def plot_geo(file):
     #store = store_traj(file)
@@ -113,7 +113,7 @@ def plot_grid(file):
 
 
 def init_grid(store, stepv):
-    from Krillmod.get_trajectory import geo2grid
+    from get_trajectory import geo2grid
     field = np.array(store['depth'])
     plt.figure()
     plt.pcolor(field)
@@ -170,7 +170,7 @@ def init_grid(store, stepv):
 
 
 def add_latlon(idxlimx, idxlimy):
-    from Krillmod.get_trajectory import geo2grid
+    from get_trajectory import geo2grid
     GridData2_IMAX = 780
     GridData2_JMAX = 825
     margv = 25
@@ -204,34 +204,39 @@ def add_latlon(idxlimx, idxlimy):
     return
 
 
-def plot_dom_paths(list_dir):
+def plot_dom_paths(list_dir, sub_idx):
     depth_file = list_dir['save_folder'] + list_dir['sim_folder'] + '/depth.npy'
     depth = np.load(depth_file)
-    from analyse_trajectory import region_part
-    area_idx = region_part(list_dir['reg_file'])
-    key_list = list(area_idx.keys())
-    for area_name in key_list:
-        dom_file = list_dir['save_folder'] + list_dir['sim_folder'] + '/' + area_name + '_dom_paths.npy'
-        #tot_file = sv_dir + tr_folder + '/' + area_name + '_total_visits.npy'
+    key_list = list(sub_idx.keys())
+    for sub_key in key_list:
+        dom_file = list_dir['save_folder'] + list_dir['sim_folder'] + '/' + sub_key + '_dom_paths.npy'
+        # NOTE: Do a check for the existence of file
+        # Modify for the limits of the plot- hard coding elsewhere- create a dictionary with options for plotting
+        # tot_file = sv_dir + tr_folder + '/' + area_name + '_total_visits.npy'
         cmax = 2
         crange = 0.1
-        if area_name == 'WAP':
+        if sub_key == 'WAP':
             idxlimx = [100, 500]
             idxlimy = [250, 650]
             so_nparts = 45621
-        if area_name == 'SO':
+        if sub_key == 'SO':
             idxlimx = [300, 600]
             idxlimy = [400, 700]
+        if sub_key == 'ALL':
+            idxlimx = [1, 700]
+            idxlimy = [1, 700]
+            crange = 0.01
+            cmax = 0.3
             so_nparts = 12221
-        if area_name == 'APP':
+        if sub_key == 'APP':
             idxlimx = [100, 500]
             idxlimy = [250, 650]
             so_nparts = 122452
-        if area_name == 'EAP':
+        if sub_key == 'EAP':
             idxlimx = [100, 500]
             idxlimy = [250, 650]
             so_nparts = 17061
-        if area_name == 'SOP':
+        if sub_key == 'SOP':
             idxlimx = [300, 600]
             idxlimy = [400, 700]
             so_nparts = 66792
@@ -270,7 +275,7 @@ def plot_dom_paths(list_dir):
         ax.tick_params(axis='y', labelsize=12)
                 #plt.rcParams.update(params)
                 #plt.show()
-        file = list_dir['save_folder'] + list_dir['sim_folder'] + '/' + area_name + '_dom_paths.svg'
+        file = list_dir['save_folder'] + list_dir['sim_folder'] + '/' + sub_key + '_dom_paths.svg'
         plt.savefig(file)
         plt.close(fig)
     return
@@ -290,7 +295,7 @@ def animate_frame(image):
 
 
 def plot_retention(sv_dir, tr_folder, time_file, reg_file):
-    from Krillmod.get_trajectory import region_part
+    from get_trajectory import region_part
     area_idx = region_part(reg_file)
     key_list = list(area_idx.keys())
     for area_name in key_list:

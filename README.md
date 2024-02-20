@@ -1,10 +1,17 @@
 # Krillmod
+#### Short description of project:
 ## Modules:
-``krillmod.py``: Main python file for calling modules.\
-``get_trajectory.py``: Module containing functions for accessing and pre-processing netcdf data stored based on CF conventions.\
-``analyse_trajectory.py``: Module with functions for analysing trajectory data accessed with ``get_trajectory.py``.\
+``krillmod.py``: Main python file for calling modules used in the analysis of trajectory.nc data.
+``import_settings.py``: Stores directories and file names in a dictionary, with settings for local and remote directories.\
+``get_trajectory.py``: Functions for accessing and pre-processing trajectory netcdf data stored with CF conventions.\
+``analyse_trajectory.py``: Functions for analysing trajectory data accessed with ``get_trajectory.py``.\
 ``plot_trajectory.py``: Module with functionality for plotting output from ``analyse_trajectory.py``.
 
+### Module ``import_settings.py``:
+Store files in ``list_dir``
+```python
+list_dir = locate_folders(comp_node, sim_folder, shape_name)
+```
 ### Module ``get_trajectory.py``:
 The function ``store_traj`` takes in file path as input and stores
 trajectory data in netcdf format ``store_traj(file)``
