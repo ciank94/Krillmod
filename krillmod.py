@@ -5,7 +5,7 @@ from plot_trajectory import plot_dom_paths
 
 # Reformat trajectory data and setup target folders:
 shape_name = 'ssmusPolygon.shp'
-sim_folder = '2017'
+sim_folder = '2016'
 comp_node = 'local'
 list_dir = locate_folders(comp_node, sim_folder, shape_name)
 
