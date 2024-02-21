@@ -42,14 +42,10 @@ def init_folders(comp_node, sim_folder, shape_name, shape_folder, save_folder, t
         print('Error: Directory "' + list_dir['traj_file'] + '" does not exist\nCheck connection to directory')
         sys.exit()
 
-    if not os.path.exists(list_dir['save_folder'] + list_dir['sim_folder']):
-        if comp_node == 'local':
-            os.mkdir(list_dir['save_folder'] + list_dir['sim_folder'])
-        else:
-            cmd = 'mkdir ' + list_dir['save_folder']
-            cmd2 = 'mkdir ' + list_dir['save_folder'] + list_dir['sim_folder']
-            os.system(cmd)
-            os.system(cmd2)
+    folder1 = list_dir['save_folder']
+    folder2 = folder1 + list_dir['sim_folder']
+    if not os.path.exists(folder2):
+        make_directory(comp_node, folder1, folder2)
 
     if not os.path.exists(list_dir['time_file']):
         get_times(list_dir)  # Creates time file in folder
@@ -66,4 +62,15 @@ def init_folders(comp_node, sim_folder, shape_name, shape_folder, save_folder, t
 
     return list_dir
 
+
+def make_directory(comp_node, folder1, folder2):
+    # Work around for remote server when we need to create two folders at once;
+    if comp_node == 'local':
+        os.mkdir(folder2)
+    else:
+        cmd = 'mkdir ' + folder1
+        cmd2 = 'mkdir ' + folder2
+        os.system(cmd)
+        os.system(cmd2)
+    return
 
