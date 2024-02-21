@@ -5,7 +5,7 @@ from plot_trajectory import plot_dom_paths
 
 # Reformat trajectory data and setup target folders:
 shape_name = 'ssmusPolygon.shp'
-sim_folder = '2016'
+sim_folder = '2017'
 comp_node = 'local'
 list_dir = locate_folders(comp_node, sim_folder, shape_name)
 
@@ -14,11 +14,10 @@ sim_account(list_dir)
 
 # Analyse trajectories
 sub_idx = ssmu_start(list_dir['reg_file'])
-lagrangian_analysis(list_dir, sub_idx)
+list_dir = lagrangian_analysis(comp_node, list_dir, sub_idx)
 
 # plot trajectories
-plot_dom_paths(list_dir, sub_idx)
-
+#plot_dom_paths(list_dir, sub_idx)
 
 
 

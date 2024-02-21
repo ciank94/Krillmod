@@ -2,41 +2,45 @@ import numpy as np
 import netCDF4 as nc
 import sys
 import os
+from import_settings import make_directory
 
 
-def lagrangian_analysis(list_dir, sub_idx):
+def lagrangian_analysis(comp_node, list_dir, sub_idx):
     # Arguments:
     # list_dir: target directories for saving intermediate output files
-    # sub_idx: Dictionary with n keys each containing p x 1 boolean vectors with True for individuals subsetted
+    # sub_idx: Dictionary with n keys each containing p x 1 boolean vectors with True for subset of individuals
     # NOTE: Modify function to save keys in separate folders;
     # Also use subsets for all analysis at once to increase efficiency
     key_list = list(sub_idx.keys())
     print('Key list for analysis: ')
     print(key_list)
     for sub_key in key_list:
+        idv = (sub_idx[sub_key])  # Boolean vector for subset of individuals
+        sub_folder(comp_node, list_dir, sub_key)  # Creates sub_folder for subset of individuals
+
         # Dominant pathways algorithm for subset of individuals (Van Sebille paper)
-        dom_file = list_dir['save_folder'] + list_dir['sim_folder'] + '/' + sub_key + '_dom_paths.npy'
-        if not os.path.exists(dom_file):
-            dominant_paths(list_dir, sub_idx, sub_key, dom_file)
+        list_dir['dom_file'] = list_dir[sub_key + '_folder'] + 'dominant_paths.npy'
+        if not os.path.exists(list_dir['dom_file']):
+            dominant_paths(idv, list_dir)
         else:
-            print('Directory: ' + dom_file + ' already exists, skipping')
+            print('Directory: ' + list_dir['dom_file'] + ' already exists, skipping')
+
         # Transit time distribution (Van Sebille mainly)
-        # transit_file = list_dir['save_folder'] + list_dir['sim_folder'] + '/' + sub_key + '_transit.npy'
-        # if not os.path.exists(transit_file):
-        #     transit_times(list_dir, sub_idx, sub_key, dom_file)
-        # else:
-        #     print('Directory: ' + dom_file + ' already exists, skipping')
+        list_dir['transit_file'] = list_dir[sub_key + '_folder'] + 'transit.npy'
+        if not os.path.exists(list_dir['transit_file']):
+            transit_times(idv, list_dir)
+        else:
+            print('Directory: ' + list_dir['transit_file'] + ' already exists, skipping')
         # Finite-size Lyapunov exponent (FSLE)-
         # (Bettencourt mainly: https://www.nature.com/articles/ngeo2570 & check email)
         # Connectivity estimates;
-    return
+    return list_dir
 
 
-def dominant_paths(list_dir, sub_idx, sub_key, dom_file):
+def dominant_paths(idv, list_dir):
     # Load depth file and region file:
     depth = np.load(list_dir['depth_file'])
     nc_file = nc.Dataset(list_dir['reg_file'], mode='r', format='NETCDF4_CLASSIC')
-    idv = (sub_idx[sub_key])
     df = np.zeros(np.shape(depth))
     df[np.isnan(depth)] = np.nan
     x = nc_file['xp'][idv, :].astype(int)
@@ -46,8 +50,38 @@ def dominant_paths(list_dir, sub_idx, sub_key, dom_file):
         xi = x[i, :]
         df[yi, xi] = df[yi, xi] + 1
     df[df > 0] = ((df[df > 0]) / np.shape(x)[0]) * 100
-    print('Saving ' + sub_key + ' visits')
-    np.save(dom_file, df)
+    print('Saving: ' + list_dir['dom_file'])
+    np.save(list_dir['dom_file'], df)
+    nc_file.close()  # close nc file
+    return
+
+
+def transit_times(idv, list_dir):
+    # Load depth file and region file:
+    depth = np.load(list_dir['depth_file'])
+    nc_file = nc.Dataset(list_dir['reg_file'], mode='r', format='NETCDF4_CLASSIC')
+    df = np.zeros(np.shape(depth))
+    df[np.isnan(depth)] = np.nan
+    x = nc_file['xp'][idv, :]
+    y = nc_file['yp'][idv, :]
+    in_reg = nc_file['in_region'][idv, :]
+    act_part = nc_file['act_part'][idv]
+    time = np.load(list_dir['time_file'], allow_pickle=True)
+    transit_mat = np.empty([np.shape(x)[0], 3])
+    for i in range(0, np.shape(x)[0]):
+        act_id = act_part[i]  # when particle becomes active
+        visit_reg = in_reg[i, :]  # All the regions particle visits
+        ids = np.where(visit_reg == 8)  # Define target region
+        if not np.shape(ids)[0]*np.shape(ids)[1] == 0:
+            transit_mat[i, 0] = x[i, act_id]
+            transit_mat[i, 1] = y[i, act_id]
+            date_0 = time[act_id]  # time particle became active
+            date_1 = time[ids[0][0]]  # time particle reached the target destination;
+            timeframe = date_1 - date_0
+            transit_hours = (timeframe.days*24) + np.floor(timeframe.seconds*1/(60*60))
+            transit_mat[i, 2] = transit_hours
+    print('Saving: ' + list_dir['transit_file'])
+    np.save(list_dir['transit_file'], transit_mat)
     nc_file.close()  # close nc file
     return
 
@@ -99,7 +133,7 @@ def ssmu_start(reg_file):
     nc_file = nc.Dataset(reg_file, mode='r', format='NETCDF4_CLASSIC')
     start_id = nc_file['start'][:]
     sub_idx = dict()
-    area_list = ['SO']
+    area_list = ['WAP']
     for reg_id in area_list:
         if reg_id == 'WAP':
             subs = np.arange(2, 7 + 1)
@@ -118,6 +152,12 @@ def ssmu_start(reg_file):
     return sub_idx
 
 
-
+def sub_folder(comp_node, list_dir, sub_key):
+    folder1 = list_dir['save_folder'] + list_dir['sim_folder']
+    folder2 = folder1 + '/' + sub_key + '/'
+    list_dir[sub_key + '_folder'] = folder2
+    if not os.path.exists(folder2):
+        make_directory(comp_node, folder1, folder2)
+    return list_dir
 
 
