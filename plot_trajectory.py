@@ -1,12 +1,62 @@
 #import cartopy.crs as ccrs
 #import cartopy.feature as cfeature
+import sys
+
 import matplotlib.pyplot as plt
 import numpy as np
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from mpl_toolkits.basemap import Basemap
+import os
+from analyse_trajectory import ssmu_target
+
+
 #from Krillmod.get_trajectory import geo2grid, store_traj
 #from Krillmod.import_settings import tr_file
 #from io import BytesIO
+
+def plot_transit(list_dir, sub_idx):
+    # Arguments:
+    # Pointer to subset of individuals (sub_key)
+    # Use that pointer to identify folder
+    # Use target function to identify target area (ssmu_target in this case)- loop over target areas (subs dictionary)
+    key_list = list(sub_idx.keys())
+    print('Key list for analysis: ')
+    print(key_list)
+    for sub_key in key_list:
+        subs = ssmu_target(sub_key)  # Target regions stored in dictionary (there may be multiple target areas);
+        for target_area in subs:
+            filepath = list_dir[sub_key + '_folder'] + target_area + '_' + 'transit.npy'
+            save_path = list_dir[sub_key + '_folder'] + target_area + '_' + 'transit.svg'
+            if not os.path.exists(filepath):
+                print('Error: Directory ' + filepath + ' with intermediate matrix does not exist, exiting')
+                sys.exit()
+            else:
+                df = np.load(filepath)
+                x = df[:, 0]
+                y = df[:, 1]
+                t = df[:, 2]
+                # Calculate the fraction that reach SOI, the mean time, std, etc., plot histogram;
+                x_arrive = x[x > 0]
+                y_arrive = y[y > 0]
+                t_arrive = t[t > 0]
+                mean_t = np.floor(np.mean(t_arrive)/24)
+                std_t = np.floor(np.std(t_arrive)/24)
+                axis1_title = 'number of particles N'
+                axis2_title = 'cumulative N in %'
+                plt.hist(t_arrive)
+                # Browse: How to add two axis with different scales in the same figure
+                # Retrieve numbers for each bin and use these for cumsum calculation in %, maybe control them too.
+                plt.plot(np.cumsum(t_arrive))
+                plt.title('Mean: ' + str(mean_t) + ' Standard deviation: ' + str(std_t))
+                plt.show()
+                # Develop a function to plot bathymetry as background, and then just plot points on top;
+                # Scale the points according to transit time and label the fraction reaching SO
+                breakpoint()
+                print(df[0])
+                print(df[1])
+                # plt.savefig(save_path)
+    return
+
 
 def plot_geo(file):
     #store = store_traj(file)

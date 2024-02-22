@@ -1,7 +1,7 @@
 # master file for krill model analysis
 from import_settings import locate_folders
 from analyse_trajectory import lagrangian_analysis, ssmu_start, sim_account
-from plot_trajectory import plot_dom_paths
+from plot_trajectory import plot_transit
 
 # Reformat trajectory data and setup target folders:
 shape_name = 'ssmusPolygon.shp'
@@ -16,6 +16,8 @@ sim_account(list_dir)
 sub_idx = ssmu_start(list_dir['reg_file'])
 list_dir = lagrangian_analysis(comp_node, list_dir, sub_idx)
 
+
+plot_transit(list_dir, sub_idx)
 # plot trajectories
 #plot_dom_paths(list_dir, sub_idx)
 
