@@ -45,6 +45,7 @@ def plot_transit(list_dir, sub_idx):
                 axis2_title = 'cumulative N in %'
                 plt.hist(t_arrive)
                 # Browse: How to add two axis with different scales in the same figure
+                # Should print the info. on mean, std and % arriving in text file for putting in table;
                 # Retrieve numbers for each bin and use these for cumsum calculation in %, maybe control them too.
                 plt.plot(np.cumsum(t_arrive))
                 plt.title('Mean: ' + str(mean_t) + ' Standard deviation: ' + str(std_t))
