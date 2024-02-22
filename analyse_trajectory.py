@@ -25,12 +25,9 @@ def lagrangian_analysis(comp_node, list_dir, sub_idx):
         else:
             print('Directory: ' + list_dir['dom_file'] + ' already exists, skipping')
 
-        # Transit time distribution (Van Sebille mainly)
-        list_dir['transit_file'] = list_dir[sub_key + '_folder'] + 'transit.npy'
-        if not os.path.exists(list_dir['transit_file']):
-            transit_times(idv, list_dir)
-        else:
-            print('Directory: ' + list_dir['transit_file'] + ' already exists, skipping')
+        # Transit time distribution (Van Sebille mainly): os.path.exists() exception handled inside function
+        transit_times(idv, list_dir, sub_key)
+
         # Finite-size Lyapunov exponent (FSLE)-
         # (Bettencourt mainly: https://www.nature.com/articles/ngeo2570 & check email)
         # Connectivity estimates;
@@ -56,33 +53,41 @@ def dominant_paths(idv, list_dir):
     return
 
 
-def transit_times(idv, list_dir):
-    # Load depth file and region file:
-    depth = np.load(list_dir['depth_file'])
-    nc_file = nc.Dataset(list_dir['reg_file'], mode='r', format='NETCDF4_CLASSIC')
-    df = np.zeros(np.shape(depth))
-    df[np.isnan(depth)] = np.nan
-    x = nc_file['xp'][idv, :]
-    y = nc_file['yp'][idv, :]
-    in_reg = nc_file['in_region'][idv, :]
-    act_part = nc_file['act_part'][idv]
-    time = np.load(list_dir['time_file'], allow_pickle=True)
-    transit_mat = np.empty([np.shape(x)[0], 3])
-    for i in range(0, np.shape(x)[0]):
-        act_id = act_part[i]  # when particle becomes active
-        visit_reg = in_reg[i, :]  # All the regions particle visits
-        ids = np.where(visit_reg == 8)  # Define target region
-        if not np.shape(ids)[0]*np.shape(ids)[1] == 0:
-            transit_mat[i, 0] = x[i, act_id]
-            transit_mat[i, 1] = y[i, act_id]
-            date_0 = time[act_id]  # time particle became active
-            date_1 = time[ids[0][0]]  # time particle reached the target destination;
-            timeframe = date_1 - date_0
-            transit_hours = (timeframe.days*24) + np.floor(timeframe.seconds*1/(60*60))
-            transit_mat[i, 2] = transit_hours
-    print('Saving: ' + list_dir['transit_file'])
-    np.save(list_dir['transit_file'], transit_mat)
-    nc_file.close()  # close nc file
+def transit_times(idv, list_dir, sub_key):
+    subs = ssmu_target(sub_key)  # Target regions stored in dictionary (there may be multiple target areas);
+    for target_area in subs:
+        filepath = list_dir[sub_key + '_folder'] + target_area + '_' + 'transit.npy'
+        if not os.path.exists(filepath):
+            # Load depth file and region file:
+            depth = np.load(list_dir['depth_file'])
+            nc_file = nc.Dataset(list_dir['reg_file'], mode='r', format='NETCDF4_CLASSIC')
+            df = np.zeros(np.shape(depth))
+            df[np.isnan(depth)] = np.nan
+            x = nc_file['xp'][idv, :]
+            y = nc_file['yp'][idv, :]
+            in_reg = nc_file['in_region'][idv, :]
+            act_part = nc_file['act_part'][idv]
+            time = np.load(list_dir['time_file'], allow_pickle=True)
+            transit_mat = np.empty([np.shape(x)[0], 3])
+            sub_ids = subs[target_area]
+            for i in range(0, np.shape(x)[0]):
+                act_id = act_part[i]  # when particle becomes active
+                visit_reg = in_reg[i, :]  # All the regions particle visits
+                ids = np.where(np.isin(visit_reg, sub_ids)) # where there are overlaps
+                if not np.shape(ids)[0]*np.shape(ids)[1] == 0:
+                    transit_mat[i, 0] = x[i, act_id]
+                    transit_mat[i, 1] = y[i, act_id]
+                    date_0 = time[act_id]  # time particle became active
+                    date_1 = time[ids[0][0]]  # time particle reached the target destination;
+                    timeframe = date_1 - date_0
+                    transit_hours = (timeframe.days*24) + np.floor(timeframe.seconds*1/(60*60))
+                    transit_mat[i, 2] = transit_hours
+                    # Add column with index of arrival perhaps
+            print('Saving: ' + filepath)
+            np.save(filepath, transit_mat)
+            nc_file.close()  # close nc file
+        else:
+            print('Directory: ' + filepath + ' already exists, skipping')
     return
 
 
@@ -91,6 +96,8 @@ def sim_account(list_dir):
     # Access regional file and look at number of particles, number of batches, individuals in each batch
     summary_file = list_dir['save_folder'] + list_dir['sim_folder'] + '/sim_summary.txt'
     if not os.path.exists(summary_file):
+        print('')
+        print('Saving: ' + summary_file)
         nc_file = nc.Dataset(list_dir['reg_file'], mode='r', format='NETCDF4_CLASSIC')
         n_parts = np.shape(nc_file['xp'])[0]
         uniq_id = np.unique(nc_file['act_part'][:])
@@ -118,6 +125,7 @@ def sim_account(list_dir):
         f.close()
         nc_file.close()  # close nc file
     else:
+        print('')
         print('Directory: ' + summary_file + ' already exists, skipping')
     return
 
@@ -150,6 +158,17 @@ def ssmu_start(reg_file):
         sub_idx[reg_id] = idx_in  # Set key to dictionary
     nc_file.close()
     return sub_idx
+
+
+def ssmu_target(sub_key):
+    subs = dict()
+    if sub_key == 'WAP':
+        subs['SO'] = np.arange(9, 11 + 1)  # SO neritic zone target
+        subs['SG'] = np.arange(12, 14 + 1)  # SG neritic zone target
+    else:
+        print('Error: SSMU end area not specified for transit')
+        sys.exit()
+    return subs
 
 
 def sub_folder(comp_node, list_dir, sub_key):

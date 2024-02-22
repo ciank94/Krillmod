@@ -1,25 +1,50 @@
 # Krillmod
-#### Short description of project:
+#### Short description of project: 
+Description of moduels used to analyse trajectory data stored in netcdf format (``trajectory.nc``). Firstly, the modules
+are briefly summarised. Secondly, the main ``krillmod.py`` file is described with example output and plots. Thirdly, I 
+go into more detail on how the individual modules work in the background.
 ## Modules:
-``krillmod.py``: Main python file for calling modules used in the analysis of trajectory.nc data.
+``krillmod.py``: Main python file for calling modules used in the analysis of trajectory.nc data.\
 ``import_settings.py``: Stores directories and file names in a dictionary, with settings for local and remote directories.\
 ``get_trajectory.py``: Functions for accessing and pre-processing trajectory netcdf data stored with CF conventions.\
 ``analyse_trajectory.py``: Functions for analysing trajectory data accessed with ``get_trajectory.py``.\
 ``plot_trajectory.py``: Module with functionality for plotting output from ``analyse_trajectory.py``.
 
+### Module ``krillmod.py``:
+#todo: Insert description here with example output for each step; \
+#1: import settings: print keys and what it points to as in sinmodules read_average_file; \
+#2: get_trajectory: regions.nc file key for which polygon an individual was in obs x time; with printout for a 
+sample(text file as in import settings.)\
+#3: analyse_trajectory: sample output.\
+#4: plot_trajectory: nicest figures.
+
 ### Module ``import_settings.py``:
-Store files in ``list_dir``
-```python
-list_dir = locate_folders(comp_node, sim_folder, shape_name)
-```
+* Function ``locate_folders`` accepts arguments for specifying whether the computation node is local or 
+remote (``comp_node``), the name of the simulation folder (``sim_folder``) and the ``.shp`` shapefile used for 
+subsets of individuals (``shape_name``). These inputs as well as directory specifications in locate_folders function, 
+are used to create a dictionary (``list_dir``) of directories for ease of usage:
+
+    ```
+    list_dir = locate_folders(comp_node, sim_folder, shape_name)
+    ```
+* Within ``locate_folders``, the directory for saving analysis output (``save_folder``), containing the trajectory.nc 
+file (``traj_folder``) and folder with shape files (``shape_file``) should be specified by the user, depending on 
+whether the script is being run locally or on a remote server. Note that the shape folder should also contain a ``.shx`` 
+file necessary for reading many ``.shp`` files.
+* Finally, the trajectory file (``trajectory.nc``), regional file (intermediate netcdf file named ``regions.nc`` 
+described below), a file with simulation timestamps (``time.npy``) and a file with bottom depth data (``depth.npy``) are
+all added to ``list_dir`` or first, created with ``os.mkdir()`` remotely or ``os.system('mkdir ')`` on a linux server.
+* The directories above are stored in the  for ease of usage:
+
 ### Module ``get_trajectory.py``:
-The function ``store_traj`` takes in file path as input and stores
-trajectory data in netcdf format ``store_traj(file)``
-```python
-file = 'A:/sim_2016/trajectory.nc' #Example filepath
-store = store_traj(file) #Store netcdf data using dictionary keys
-print(store.keys()) #Print keys defined in store_traj
-```
+* The function ``store_traj`` takes in file path as input and stores
+trajectory data in netcdf format ``store_traj(file)``:
+    ```python
+    file = 'A:/sim_2016/trajectory.nc' #Example filepath
+    store = store_traj(file) #Store netcdf data using dictionary keys
+    print(store.keys()) #Print keys defined in store_traj
+    ```
+
 _Output:_
 ```python
 dict_keys(['imax', 'jmax', 'depth', 'xp', 'yp', 'zp', 'time'])
