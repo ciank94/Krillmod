@@ -57,6 +57,9 @@ def transit_times(idv, list_dir, sub_key):
     subs = ssmu_target(sub_key)  # Target regions stored in dictionary (there may be multiple target areas);
     for target_area in subs:
         filepath = list_dir[sub_key + '_folder'] + target_area + '_' + 'transit.npy'
+        filepath2 = list_dir[sub_key + '_folder'] + target_area + '_' + 'wormx.npy'
+        filepath3 = list_dir[sub_key + '_folder'] + target_area + '_' + 'wormy.npy'
+        filepath4 = list_dir[sub_key + '_folder'] + target_area + '_' + 'act_part.npy'
         if not os.path.exists(filepath):
             # Load depth file and region file:
             depth = np.load(list_dir['depth_file'])
@@ -68,23 +71,37 @@ def transit_times(idv, list_dir, sub_key):
             in_reg = nc_file['in_region'][idv, :]
             act_part = nc_file['act_part'][idv]
             time = np.load(list_dir['time_file'], allow_pickle=True)
-            transit_mat = np.empty([np.shape(x)[0], 3])
+            transit_mat = np.zeros([np.shape(x)[0], 5])
+            worm_matx = np.empty([np.shape(x)[0], np.shape(x)[1]])
+            worm_maty = np.empty([np.shape(x)[0], np.shape(x)[1]])
             sub_ids = subs[target_area]
+            print(subs[target_area])
             for i in range(0, np.shape(x)[0]):
                 act_id = act_part[i]  # when particle becomes active
                 visit_reg = in_reg[i, :]  # All the regions particle visits
-                ids = np.where(np.isin(visit_reg, sub_ids)) # where there are overlaps
-                if not np.shape(ids)[0]*np.shape(ids)[1] == 0:
-                    transit_mat[i, 0] = x[i, act_id]
-                    transit_mat[i, 1] = y[i, act_id]
-                    date_0 = time[act_id]  # time particle became active
-                    date_1 = time[ids[0][0]]  # time particle reached the target destination;
-                    timeframe = date_1 - date_0
-                    transit_hours = (timeframe.days*24) + np.floor(timeframe.seconds*1/(60*60))
-                    transit_mat[i, 2] = transit_hours
+                if not np.isin(in_reg[i, act_id], sub_ids): #Make sure it doesn't start in region
+                    ids = np.where(np.isin(visit_reg, sub_ids)) # where there are overlaps
+                    if not np.shape(ids)[0]*np.shape(ids)[1] == 0:
+                        transit_mat[i, 0] = x[i, act_id]
+                        transit_mat[i, 1] = y[i, act_id]
+                        date_0 = time[act_id]  # time particle became active
+                        date_1 = time[ids[0][0]]  # time particle reached the target destination;
+                        timeframe = date_1 - date_0
+                        transit_hours = (timeframe.days*24) + np.floor(timeframe.seconds*1/(60*60))
+                        transit_mat[i, 2] = transit_hours
+                        transit_mat[i, 3] = x[i, ids[0][0]]
+                        transit_mat[i, 4] = y[i, ids[0][0]]
+                        #Worm matrix
+                        worm_matx[i, act_id:np.shape(x)[1]] = x[i, act_id:np.shape(x)[1]]
+                        worm_maty[i, act_id:np.shape(x)[1]] = y[i, act_id:np.shape(x)[1]]
+
+
                     # Add column with index of arrival perhaps
             print('Saving: ' + filepath)
             np.save(filepath, transit_mat)
+            np.save(filepath2, worm_matx)
+            np.save(filepath3, worm_maty)
+            # when particles are active:
             nc_file.close()  # close nc file
         else:
             print('Directory: ' + filepath + ' already exists, skipping')
@@ -141,7 +158,7 @@ def ssmu_start(reg_file):
     nc_file = nc.Dataset(reg_file, mode='r', format='NETCDF4_CLASSIC')
     start_id = nc_file['start'][:]
     sub_idx = dict()
-    area_list = ['WAP']
+    area_list = ['WAP', 'SO', 'ALL']
     for reg_id in area_list:
         if reg_id == 'WAP':
             subs = np.arange(2, 7 + 1)
@@ -165,6 +182,11 @@ def ssmu_target(sub_key):
     if sub_key == 'WAP':
         subs['SO'] = np.arange(9, 11 + 1)  # SO neritic zone target
         subs['SG'] = np.arange(12, 14 + 1)  # SG neritic zone target
+    elif sub_key == 'SO':
+        subs['SG'] = np.arange(13, 14 + 1)
+    elif sub_key == 'ALL':
+        subs['SO'] = np.arange(9, 11 + 1)
+        subs['SG'] = np.arange(13, 14 + 1)
     else:
         print('Error: SSMU end area not specified for transit')
         sys.exit()
