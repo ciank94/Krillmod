@@ -65,5 +65,7 @@ bathymetric data in the simulation folder for ease of use.
 
 <img src="transit_example.png" width="675" height="500" />
 
+<img src="SO_transit_example.gif" width="675" height="500" />
+
 
 

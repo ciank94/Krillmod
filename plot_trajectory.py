@@ -153,25 +153,32 @@ def animate_transit(list_dir, sub_idx):
                     sub_id = np.sum(wormx, axis=1) > 0
                     x_end = df[:, 3]
                     y_end = df[:, 4]
-                    xe = x_end[sub_id]
-                    ye = y_end[sub_id]
-                    wx = wormx[sub_id, :]
-                    wy = wormy[sub_id, :]
+                    xe = x_end#[sub_id]
+                    ye = y_end#[sub_id]
+                    wx = wormx#[sub_id, :]
+                    wy = wormy#[sub_id, :]
                     if len(wx) < 1000:
                         sub = 1
                     else:
                         sub = 10
                     skip = (slice(None, None, sub), slice(None, None, sub))
                     skip2 = slice(None, None, sub)
-                    wxp = wx[skip]
-                    wyp = wy[skip]
-                    # xep = xe[skip2]
-                    # yep = ye[skip2]
+                    wxp = wx  # [skip]
+                    wyp = wy  # [skip]
+                    # xep = xe #[skip2]
+                    # yep = ye #[skip2]
                     # breakpoint()
-                    # wxp = wx
-                    # wyp = wy
                     wxp[wxp == 0] = np.nan
                     wyp[wyp == 0] = np.nan
+                    # wxp = wx[skip]
+                    # wyp = wy[skip]
+                    # # xep = xe[skip2]
+                    # # yep = ye[skip2]
+                    # # breakpoint()
+                    # # wxp = wx
+                    # # wyp = wy
+                    # wxp[wxp == 0] = np.nan
+                    # wyp[wyp == 0] = np.nan
 
                     # wx[wx==0] = np.nan
                     # #wy[wy == 0] = np.nan

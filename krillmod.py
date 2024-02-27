@@ -21,6 +21,6 @@ list_dir = lagrangian_analysis(comp_node, list_dir, sub_idx)
 #plot_transit(list_dir, sub_idx)
 #plot_dom_paths(list_dir, sub_idx)
 
-#animate_transit(list_dir, sub_idx)
+animate_transit(list_dir, sub_idx)
 #animate_dom_paths(list_dir, sub_idx)
 

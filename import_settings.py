@@ -30,7 +30,7 @@ def init_folders(comp_node, sim_folder, shape_name, shape_folder, save_folder, t
     # storing information on polygon index of individual for each time step
     list_dir['shape_file'] = list_dir['shape_folder'] + list_dir['shape_name']
     list_dir['traj_file'] = list_dir['traj_folder'] + list_dir['sim_folder'] + '/trajectory.nc'
-    list_dir['reg_file'] = list_dir['save_folder'] + list_dir['sim_folder'] + '/' + shape_name + '_regions.nc'
+    list_dir['reg_file'] = list_dir['save_folder'] + list_dir['sim_folder'] + '/regions.nc'
     list_dir['time_file'] = list_dir['save_folder'] + list_dir['sim_folder'] + '/times.npy'
     list_dir['depth_file'] = list_dir['save_folder'] + list_dir['sim_folder'] + '/depth.npy'
 
