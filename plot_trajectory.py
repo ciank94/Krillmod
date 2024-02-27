@@ -123,9 +123,11 @@ def plot_transit(list_dir, sub_idx):
 
 def animate_transit(list_dir, sub_idx):
     key_list = list(sub_idx.keys())
-    for sub_key in key_list:
-        subs = ssmu_target(sub_key)  # Target regions stored in dictionary (there may be multiple target areas);
-        for target_area in subs:
+    #for sub_key in key_list:
+    for sub_key in ['WAP']:
+        #subs = ssmu_target(sub_key)  # Target regions stored in dictionary (there may be multiple target areas);
+        #for target_area in subs:
+        for target_area in ['SO']:
             filepath = list_dir[sub_key + '_folder'] + target_area + '_' + 'transit.npy'
             save_path = list_dir[sub_key + '_folder'] + target_area + '_' + 'transit.gif'
             if not os.path.exists(filepath):
@@ -193,8 +195,9 @@ def animate_transit(list_dir, sub_idx):
                     fig, ax = plot_depth(list_dir, grid_lims)
 
                     artists = []
-                    for i in range(0, np.shape(wxp)[1]):
-                        container = ax.plot(wxp[:, i], wyp[:, i], 'r.', markersize=1.5, linewidth=0.8)
+                    max_steps = np.floor(np.shape(wxp)[1]/5).astype(int)
+                    for i in range(0, max_steps):
+                        container = ax.plot(wxp[:, i*5], wyp[:, i*5], 'r.', markersize=1.5, linewidth=0.8)
                         artists.append(container)
                         # ax.plot(x_arrive, y_arrive, '.k', markersize = 3, linestyle='None')#linewidth=0.0001)
                         # ax.plot(xep, yep, '.w', markersize = 3,linestyle='None')# linewidth=0.0001)
