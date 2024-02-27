@@ -16,7 +16,7 @@ def lagrangian_analysis(comp_node, list_dir, sub_idx):
     print(key_list)
     for sub_key in key_list:
         idv = (sub_idx[sub_key])  # Boolean vector for subset of individuals
-        sub_folder(comp_node, list_dir, sub_key)  # Creates sub_folder for subset of individuals
+        list_dir = sub_folder(comp_node, list_dir, sub_key)  # Creates sub_folder for subset of individuals
 
         # Dominant pathways algorithm for subset of individuals (Van Sebille paper)
         list_dir['dom_file'] = list_dir[sub_key + '_folder'] + 'dominant_paths.npy'
@@ -72,10 +72,12 @@ def transit_times(idv, list_dir, sub_key):
             act_part = nc_file['act_part'][idv]
             time = np.load(list_dir['time_file'], allow_pickle=True)
             transit_mat = np.zeros([np.shape(x)[0], 5])
-            worm_matx = np.empty([np.shape(x)[0], np.shape(x)[1]])
-            worm_maty = np.empty([np.shape(x)[0], np.shape(x)[1]])
+            n_saves = 2500
+            worm_matx = np.empty([n_saves, np.shape(x)[1]]) # Too much information for plotting, put a limit on the first thousand, also create a function for saving the first batches of particles for plotting
+            worm_maty = np.empty([n_saves, np.shape(x)[1]])
             sub_ids = subs[target_area]
             print(subs[target_area])
+            c = -1
             for i in range(0, np.shape(x)[0]):
                 act_id = act_part[i]  # when particle becomes active
                 visit_reg = in_reg[i, :]  # All the regions particle visits
@@ -92,9 +94,10 @@ def transit_times(idv, list_dir, sub_key):
                         transit_mat[i, 3] = x[i, ids[0][0]]
                         transit_mat[i, 4] = y[i, ids[0][0]]
                         #Worm matrix
-                        worm_matx[i, act_id:np.shape(x)[1]] = x[i, act_id:np.shape(x)[1]]
-                        worm_maty[i, act_id:np.shape(x)[1]] = y[i, act_id:np.shape(x)[1]]
-
+                        if not c == n_saves:
+                            worm_matx[c, act_id:np.shape(x)[1]] = x[i, act_id:np.shape(x)[1]]
+                            worm_maty[c, act_id:np.shape(x)[1]] = y[i, act_id:np.shape(x)[1]]
+                            c = c + 1
 
                     # Add column with index of arrival perhaps
             print('Saving: ' + filepath)

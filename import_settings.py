@@ -30,7 +30,7 @@ def init_folders(comp_node, sim_folder, shape_name, shape_folder, save_folder, t
     # storing information on polygon index of individual for each time step
     list_dir['shape_file'] = list_dir['shape_folder'] + list_dir['shape_name']
     list_dir['traj_file'] = list_dir['traj_folder'] + list_dir['sim_folder'] + '/trajectory.nc'
-    list_dir['reg_file'] = list_dir['save_folder'] + list_dir['sim_folder'] + '/regions.nc'
+    list_dir['reg_file'] = list_dir['save_folder'] + list_dir['sim_folder'] + '/' + shape_name + '_regions.nc'
     list_dir['time_file'] = list_dir['save_folder'] + list_dir['sim_folder'] + '/times.npy'
     list_dir['depth_file'] = list_dir['save_folder'] + list_dir['sim_folder'] + '/depth.npy'
 
@@ -60,6 +60,9 @@ def init_folders(comp_node, sim_folder, shape_name, shape_folder, save_folder, t
         print('Note: Reformatting trajectory data for analysis')
         store_regions(list_dir)  # Creates intermediate file with trajectory and regional data
 
+    if not (os.path.exists(list_dir['shape_folder'] + 'regions.png')):
+        plot_regions(list_dir)
+
     return list_dir
 
 
@@ -72,5 +75,29 @@ def make_directory(comp_node, folder1, folder2):
         cmd2 = 'mkdir ' + folder2
         os.system(cmd)
         os.system(cmd2)
+    return
+
+
+def plot_regions(list_dir):
+    import matplotlib.pyplot as plt
+    from plot_trajectory import plot_background
+    import numpy as np
+
+    filepath = list_dir['shape_folder'] + str('poly2grid.npy')
+    depth = np.load(list_dir['depth_file'])
+    df = np.load(filepath)
+    df[np.isnan(depth)] = np.nan
+    df[df < 0] = -100
+    list_ids = np.where([df > 0])
+    grid_lims = dict()
+    grid_lims['idlimx'] = [np.nanmax([np.nanmin(list_ids[2]) - 50, 0]),
+                           np.nanmin([np.nanmax(list_ids[2]) + 20, np.shape(depth)[1]])]
+    grid_lims['idlimy'] = [np.nanmax([np.nanmin(list_ids[1]) - 100, 0]),
+                           np.nanmin([np.nanmax(list_ids[1]) + 50, np.shape(depth)[0]])]
+    fig, ax = plot_background(list_dir, grid_lims)
+    cmap1 = plt.get_cmap('coolwarm')  # Oranges, Reds- sequential coolwarm= divergent, jet, seismic
+    ax.contourf(df, levels=np.arange(0, 1, 0.1), extend='both', cmap=cmap1)
+    plt.savefig(list_dir['shape_folder'] + 'regions.png', dpi=400)
+    plt.close(fig)
     return
 

@@ -8,6 +8,8 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 from mpl_toolkits.basemap import Basemap
 import os
 from analyse_trajectory import ssmu_target
+from matplotlib.animation import PillowWriter
+import matplotlib.animation as animation
 
 
 #from Krillmod.get_trajectory import geo2grid, store_traj
@@ -81,6 +83,76 @@ def plot_transit(list_dir, sub_idx):
                     sub_id = np.sum(wormx, axis=1) > 0
                     x_end = df[:, 3]
                     y_end = df[:, 4]
+                    #xe = x_end[sub_id]
+                    #ye = y_end[sub_id]
+                    wx = wormx[sub_id, :]
+                    wy = wormy[sub_id, :]
+                    if len(wx) < 1000:
+                        sub = 1
+                    else:
+                        sub = 10
+                    skip = (slice(None, None, sub), slice(None, None, sub))
+                    skip2 = slice(None, None, sub)
+                    wxp = wx #[skip]
+                    wyp = wy #[skip]
+                    #xep = xe #[skip2]
+                    #yep = ye #[skip2]
+                    #breakpoint()
+                    wxp[wxp==0] = np.nan
+                    wyp[wyp == 0] = np.nan
+
+                    #wx[wx==0] = np.nan
+                    #wy[wy == 0] = np.nan
+                    #breakpoint()
+
+                    grid_lims = dict()
+                    depth = np.load(list_dir['depth_file'])
+                    grid_lims['idlimx'] = [np.nanmax([np.nanmin(wxp) - 50,0]), np.nanmin([np.nanmax(wxp) + 20, np.shape(depth)[1]])]
+                    grid_lims['idlimy'] = [np.nanmax([np.nanmin(wyp) - 100,0]), np.nanmin([np.nanmax(wyp) + 50, np.shape(depth)[0]])]
+                    fig, ax = plot_depth(list_dir, grid_lims)
+
+
+                    for i in range(0, np.shape(wxp)[0]):
+                        ax.plot(wxp[i, :], wyp[i, :], '.r-', markersize = 1.5, linewidth=0.01)
+
+                    ax.plot(x_arrive, y_arrive, '.k', markersize = 3, linestyle='None')#linewidth=0.0001)
+                    #ax.plot(xep, yep, '.w', markersize = 3,linestyle='None')# linewidth=0.0001)
+                    plt.savefig(save_path2, dpi=400)
+    return
+
+
+def animate_transit(list_dir, sub_idx):
+    key_list = list(sub_idx.keys())
+    for sub_key in key_list:
+        subs = ssmu_target(sub_key)  # Target regions stored in dictionary (there may be multiple target areas);
+        for target_area in subs:
+            filepath = list_dir[sub_key + '_folder'] + target_area + '_' + 'transit.npy'
+            save_path = list_dir[sub_key + '_folder'] + target_area + '_' + 'transit.gif'
+            if not os.path.exists(filepath):
+                print('Error: Directory ' + filepath + ' with intermediate matrix does not exist, exiting')
+                sys.exit()
+            else:
+                df = np.load(filepath)
+                # if sub_key == 'SO' and target_area == 'SG':
+                #     breakpoint()
+                x = df[:, 0]
+                y = df[:, 1]
+                t = df[:, 2]
+        # Calculate the fraction that reach SOI, the mean time, std, etc., plot histogram;
+                x_arrive = x[x > 0.1]
+                y_arrive = y[y > 0.1]
+                t_arrive = t[t > 0.1]
+                t_arrive = t_arrive / 24
+                if np.shape(t_arrive)[0] == 0:
+                    print('No particles arrived, skipping')
+                else:
+                    filepath2 = list_dir[sub_key + '_folder'] + target_area + '_' + 'wormx.npy'
+                    filepath3 = list_dir[sub_key + '_folder'] + target_area + '_' + 'wormy.npy'
+                    wormx = np.load(filepath2)
+                    wormy = np.load(filepath3)
+                    sub_id = np.sum(wormx, axis=1) > 0
+                    x_end = df[:, 3]
+                    y_end = df[:, 4]
                     xe = x_end[sub_id]
                     ye = y_end[sub_id]
                     wx = wormx[sub_id, :]
@@ -93,29 +165,86 @@ def plot_transit(list_dir, sub_idx):
                     skip2 = slice(None, None, sub)
                     wxp = wx[skip]
                     wyp = wy[skip]
-                    xep = xe[skip2]
-                    yep = ye[skip2]
-                    #breakpoint()
-                    wxp[wxp==0] = np.nan
+                    # xep = xe[skip2]
+                    # yep = ye[skip2]
+                    # breakpoint()
+                    # wxp = wx
+                    # wyp = wy
+                    wxp[wxp == 0] = np.nan
                     wyp[wyp == 0] = np.nan
 
-                    #wx[wx==0] = np.nan
-                    #wy[wy == 0] = np.nan
-                    #breakpoint()
+                    # wx[wx==0] = np.nan
+                    # #wy[wy == 0] = np.nan
+                    # breakpoint()
 
                     grid_lims = dict()
                     depth = np.load(list_dir['depth_file'])
-                    grid_lims['idlimx'] = [np.nanmax([np.nanmin(wxp) - 50,0]), np.nanmin([np.nanmax(wxp) + 20, np.shape(depth)[0]])]
-                    grid_lims['idlimy'] = [np.nanmax([np.nanmin(wyp) - 100,0]), np.nanmin([np.nanmax(wyp) + 50, np.shape(depth)[1]])]
+                    grid_lims['idlimx'] = [np.nanmax([np.nanmin(wxp) - 50, 0]),
+                                           np.nanmin([np.nanmax(wxp) + 20, np.shape(depth)[0]])]
+                    grid_lims['idlimy'] = [np.nanmax([np.nanmin(wyp) - 100, 0]),
+                                           np.nanmin([np.nanmax(wyp) + 50, np.shape(depth)[1]])]
                     fig, ax = plot_depth(list_dir, grid_lims)
 
+                    artists = []
+                    for i in range(0, np.shape(wxp)[1]):
+                        container = ax.plot(wxp[:, i], wyp[:, i], 'r.', markersize=1.5, linewidth=0.8)
+                        artists.append(container)
+                        # ax.plot(x_arrive, y_arrive, '.k', markersize = 3, linestyle='None')#linewidth=0.0001)
+                        # ax.plot(xep, yep, '.w', markersize = 3,linestyle='None')# linewidth=0.0001)
 
-                    for i in range(0, np.shape(wxp)[0]):
-                        ax.plot(wxp[i, :], wyp[i, :], '.r-', markersize = 1.5, linewidth=0.8)
+                    ani = animation.ArtistAnimation(fig=fig, artists=artists, interval=2)
+                    # plt.show()
+                    ani.save(filename=save_path, dpi=400, writer=PillowWriter(fps=30))
+    return
 
-                    ax.plot(x_arrive, y_arrive, '.k', markersize = 3, linestyle='None')#linewidth=0.0001)
-                    ax.plot(xep, yep, '.w', markersize = 3,linestyle='None')# linewidth=0.0001)
-                    plt.savefig(save_path2, dpi=400)
+
+def animate_dom_paths(list_dir, sub_idx):
+    depth = np.load(list_dir['depth_file'])
+    cmap1 = plt.get_cmap('OrRd')  # Oranges, Reds- sequential coolwarm= divergent, jet, seismic
+    cmax = 100
+    crange = 0.01
+    sub_key = 'WAP'
+    idv = (sub_idx[sub_key])
+    save_path = list_dir[sub_key + '_folder'] + 'dom_paths.gif'
+    nc_file = nc.Dataset(list_dir['reg_file'], mode='r', format='NETCDF4_CLASSIC')
+    df = np.zeros(np.shape(depth))
+    df[np.isnan(depth)] = np.nan
+    list_ids = np.where([depth > 0])
+
+    grid_lims = dict()
+    grid_lims['idlimx'] = [np.nanmax([np.nanmin(list_ids[2]) - 50, 0]),
+                           np.nanmin([np.nanmax(list_ids[2]) + 20, np.shape(depth)[1]])]
+    grid_lims['idlimy'] = [np.nanmax([np.nanmin(list_ids[1]) - 100, 0]),
+                           np.nanmin([np.nanmax(list_ids[1]) + 50, np.shape(depth)[0]])]
+    fig, ax = plot_background(list_dir, grid_lims)
+    x = nc_file['xp'][idv,:]
+    y = nc_file['yp'][idv,:]
+    inc = 80
+    artists = []
+    tot_v = np.floor(np.shape(x)[1]/inc).astype(int)
+    for k in range(0, tot_v):
+        df = np.zeros(np.shape(depth))
+        df[np.isnan(depth)] = np.nan
+        #v1 = np.min([k + 10, np.shape(x)[1]])
+        for i in range(0, np.shape(x)[0]):
+            yi = y[i, (k*inc)+1:((k+1)*inc)]
+            xi = x[i, (k*inc)+1:((k+1)*inc)]
+            df[yi, xi] = df[yi, xi] + 1
+        df[df > 0] = ((df[df > 0]) / np.nanmax(df[df>0])) * 100
+        cs = ax.contourf(df, levels=np.arange(0, cmax, crange), extend='both', cmap=cmap1)
+        # divider = make_axes_locatable(ax)
+        # ax_cb = divider.new_horizontal(size="3%", pad=0.05, axes_class=plt.Axes)
+        # fig.add_axes(ax_cb)
+        #cbar = plt.colorbar(cs, cax=ax_cb)
+        #cbar.ax.set_ylabel('Probability (%)', loc='center', size=12.5, weight='bold')
+        # cbar.ax.tick_params(labelsize=9, rotation=0)
+        # ax.tick_params(axis='x', labelsize=12)
+        # ax.tick_params(axis='y', labelsize=12)
+        artists.append(cs.collections)
+        cs.remove()
+        plt.show()
+    ani = animation.ArtistAnimation(fig=fig, artists=artists, interval=2)
+    ani.save(filename=save_path, dpi=400, writer=PillowWriter(fps=30))
     return
 
 
