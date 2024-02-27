@@ -52,7 +52,7 @@ all added to ``list_dir`` or first, created with ``os.mkdir()`` locally or ``os.
 indices defined in the shapefile onto grid coordinates in the domain. The red areas in the image below show grid cells assigned a polygon value > 0 
 (maybe add image with MPA, from: https://github.com/ccamlr/data):
 
-<img src="regions_example.png" width="675" height="500" />
+<img src="regions_example.png" width="500" />
 
 * The `store_regions` function then cycles through each individual coordinate and checks which polygon they are found for each time step, 
 furnishing the `in_region` matrix. If the individual is not in any of the polygons extracted from the shapefile, 
@@ -61,11 +61,19 @@ that is used in further analysis.
 * In addition to `store_regions`, `get_times`and `get_depth`are called from import settings to store time stamps and
 bathymetric data in the simulation folder for ease of use.
 
+### Module `analyse trajectory`:
+* Used to analyse data based on start positions of particles and then save intermediate `.npy` files for plotting. The 
+functions `ssmu_start` and `ssmu_target` are hard coded to subset individuals moving from region A to B. The various 
+analyses called in `lagrangian_analysis` use keys for the areas specified.
+
 ### Module `plot_trajectory.py`:
+* Plots for transit time distributions between areas, for example:
 
-<img src="transit_example.png" width="675" height="500" />
+<img src="transit_example.png" width="500" />
 
-<img src="SO_transit_example.gif" width="675" height="500" />
+* Animations for particles transported between regions, for example:
+
+<img src="SO_transit_example.gif" width="500" />
 
 
 
