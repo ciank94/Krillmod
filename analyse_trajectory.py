@@ -28,10 +28,56 @@ def lagrangian_analysis(comp_node, list_dir, sub_idx):
         # Transit time distribution (Van Sebille mainly): os.path.exists() exception handled inside function
         transit_times(idv, list_dir, sub_key)
 
+        # Retention:
+        list_dir['ret_file'] = list_dir[sub_key + '_folder'] + 'retention.npy'
+        if not os.path.exists(list_dir['ret_file']):
+            retention_times(idv, list_dir, sub_key)
+        else:
+            print('Directory: ' + list_dir['ret_file'] + ' already exists, skipping')
+
+
         # Finite-size Lyapunov exponent (FSLE)-
         # (Bettencourt mainly: https://www.nature.com/articles/ngeo2570 & check email)
         # Connectivity estimates;
     return list_dir
+
+
+def retention_times(idv, list_dir, sub_key):
+    depth = np.load(list_dir['depth_file'])
+    nc_file = nc.Dataset(list_dir['reg_file'], mode='r', format='NETCDF4_CLASSIC')
+    df = np.zeros(np.shape(depth))
+    df[np.isnan(depth)] = np.nan
+    x = nc_file['xp'][idv, :].astype(int)
+    y = nc_file['yp'][idv, :].astype(int)
+    act_part = nc_file['act_part'][idv]
+    store_mat = np.array([x[0:np.sum(act_part==0),0], y[0:np.sum(act_part==0),0], np.zeros(np.shape(y[0:np.sum(act_part==0), 0]))]).T
+    time = np.load(list_dir['time_file'], allow_pickle=True)
+    d_lim = 5
+    temp_vec = np.zeros(np.shape(x)[0])
+    for i in range(0, np.shape(x)[0]):
+        act_id = act_part[i]
+        xt = x[i, act_id:np.shape(x)[1]]
+        yt = y[i, act_id:np.shape(x)[1]]
+        dist_t = np.sqrt(((xt-xt[0])**2) + ((yt-yt[0])**2))
+        cond = np.where(dist_t > d_lim)
+        if np.shape(cond)[0]*np.shape(cond)[1] > 0:
+            lim_v = cond[0][0] + act_id
+            date_0 = time[act_id]  # time particle became active
+            date_1 = time[lim_v]  # time particle reached the target destination;
+            timeframe = date_1 - date_0
+            transit_hours = (timeframe.days * 24) + np.floor(timeframe.seconds * 1 / (60 * 60))
+            temp_vec[i] = transit_hours
+        else:
+            temp_vec[i] = np.nan
+
+    for i in range(0, np.shape(store_mat)[0]):
+        ids = np.arange(i,np.shape(x)[0], np.shape(store_mat)[0])
+        store_mat[i,2] = np.nanmean(temp_vec[ids])
+
+    save_path = list_dir[sub_key + '_folder'] + 'retention.npy'
+    np.save(save_path, store_mat)
+    nc_file.close()
+    return
 
 
 def dominant_paths(idv, list_dir):
@@ -73,7 +119,7 @@ def transit_times(idv, list_dir, sub_key):
             time = np.load(list_dir['time_file'], allow_pickle=True)
             transit_mat = np.zeros([np.shape(x)[0], 5])
             n_saves = 2500
-            worm_matx = np.empty([n_saves, np.shape(x)[1]]) # Too much information for plotting, put a limit on the first thousand, also create a function for saving the first batches of particles for plotting
+            worm_matx = np.empty([n_saves, np.shape(x)[1]])
             worm_maty = np.empty([n_saves, np.shape(x)[1]])
             sub_ids = subs[target_area]
             print(subs[target_area])
@@ -81,8 +127,8 @@ def transit_times(idv, list_dir, sub_key):
             for i in range(0, np.shape(x)[0]):
                 act_id = act_part[i]  # when particle becomes active
                 visit_reg = in_reg[i, :]  # All the regions particle visits
-                if not np.isin(in_reg[i, act_id], sub_ids): #Make sure it doesn't start in region
-                    ids = np.where(np.isin(visit_reg, sub_ids)) # where there are overlaps
+                if not np.isin(in_reg[i, act_id], sub_ids):  # Make sure it doesn't start in region
+                    ids = np.where(np.isin(visit_reg, sub_ids))  # where there are overlaps
                     if not np.shape(ids)[0]*np.shape(ids)[1] == 0:
                         transit_mat[i, 0] = x[i, act_id]
                         transit_mat[i, 1] = y[i, act_id]

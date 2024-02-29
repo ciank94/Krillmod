@@ -4,17 +4,75 @@ import sys
 import netCDF4 as nc
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from mpl_toolkits.basemap import Basemap
 import os
 from analyse_trajectory import ssmu_target
 from matplotlib.animation import PillowWriter
+import matplotlib.cm as cm
 import matplotlib.animation as animation
 
 
-#from Krillmod.get_trajectory import geo2grid, store_traj
-#from Krillmod.import_settings import tr_file
-#from io import BytesIO
+def plot_connectivity(list_dir, sub_idx):
+    key_list = list(sub_idx.keys())
+    print('Key list for analysis: ')
+    print(key_list)
+    for sub_key in key_list:
+        subs = ssmu_target(sub_key)  # Target regions stored in dictionary (there may be multiple target areas);
+        for target_area in subs:
+            filepath = list_dir[sub_key + '_folder'] + target_area + '_' + 'transit.npy'
+            save_path = list_dir[sub_key + '_folder'] + target_area + '_' + 'connect.png'
+            if not os.path.exists(filepath):
+                print('Error: Directory ' + filepath + ' with intermediate matrix does not exist, exiting')
+                sys.exit()
+            else:
+                df = np.load(filepath)
+                x = df[:, 0]
+                y = df[:, 1]
+                x1 = x[x > 0]
+                y1 = y[y > 0]
+                df2 = np.array([x1,y1]).T
+                df3 = np.unique(df2, axis=0)
+                xlist = df3[:, 0]
+                ylist = df3[:, 1]
+                tot_part = np.zeros(np.shape(df3)[0])
+                if np.shape(tot_part)[0] == 0:
+                    print('No arrivals for connectivitiy plot, skipping')
+                else:
+                    idv = (sub_idx[sub_key])
+                    nc_file = nc.Dataset(list_dir['reg_file'], mode='r', format='NETCDF4_CLASSIC')
+                    x = nc_file['xp'][idv, 0].astype(int)
+                    y = nc_file['yp'][idv, 0].astype(int)
+                    dfn = np.array([x, y]).T
+                    dfn2 = np.unique(dfn, axis=0)
+                    xl1 = dfn2[:,0]
+                    yl1 = dfn2[:,1]
+                    xl1 = xl1[xl1>0]
+                    yl1 = yl1[yl1 > 0]
+                    for i in range(0, np.shape(df3)[0]):
+                        xv = xlist[i]
+                        yv = ylist[i]
+                        b1 = np.isin(x1, xv)
+                        b2 = np.isin(y1, yv)
+                        sumb = b1*b2
+                        tot_part[i] = np.sum(sumb)
+                    depth = np.load(list_dir['depth_file'])
+                    grid_lims = dict()
+                    grid_lims['idlimx'] = [np.nanmax([np.nanmin(xl1) - 20, 0]),
+                                           np.nanmin([np.nanmax(xl1) + 20, np.shape(depth)[1]])]
+                    grid_lims['idlimy'] = [np.nanmax([np.nanmin(yl1) - 20, 0]),
+                                           np.nanmin([np.nanmax(yl1) + 20, np.shape(depth)[0]])]
+                    fig, ax = plot_background(list_dir, grid_lims)
+                    ax.scatter(xl1, yl1, s= 10, c='w', edgecolors='gray', alpha =0.15)
+                    p2 = ax.scatter(xlist, ylist, s= 10, c=tot_part, cmap='jet', edgecolors='gray', vmin = np.nanmin(tot_part), vmax = np.nanmax(tot_part))
+                    fig.colorbar(p2, label='Number of particles')
+                    #plt.legend(loc='upper center', bbox_to_anchor=(1.23, 1), ncol=1, fancybox=True, shadow=True, title='s2')
+                    plt.savefig(save_path, dpi=400)
+                    plt.close(fig)
+                    nc_file.close()
+
+    return
 
 def plot_transit(list_dir, sub_idx):
     # Arguments:
@@ -93,31 +151,60 @@ def plot_transit(list_dir, sub_idx):
                         sub = 10
                     skip = (slice(None, None, sub), slice(None, None, sub))
                     skip2 = slice(None, None, sub)
-                    wxp = wx #[skip]
-                    wyp = wy #[skip]
-                    #xep = xe #[skip2]
-                    #yep = ye #[skip2]
-                    #breakpoint()
+                    wxp = wx
+                    wyp = wy
                     wxp[wxp==0] = np.nan
                     wyp[wyp == 0] = np.nan
-
-                    #wx[wx==0] = np.nan
-                    #wy[wy == 0] = np.nan
-                    #breakpoint()
-
                     grid_lims = dict()
                     depth = np.load(list_dir['depth_file'])
                     grid_lims['idlimx'] = [np.nanmax([np.nanmin(wxp) - 50,0]), np.nanmin([np.nanmax(wxp) + 20, np.shape(depth)[1]])]
                     grid_lims['idlimy'] = [np.nanmax([np.nanmin(wyp) - 100,0]), np.nanmin([np.nanmax(wyp) + 50, np.shape(depth)[0]])]
                     fig, ax = plot_depth(list_dir, grid_lims)
+                    cvals = np.arange(0, np.shape(wxp)[0])
+                    cv = np.zeros(np.shape(wxp))
+                    for i in range(0, np.shape(cv)[1]):
+                        cv[:,i] = i
+                    ax.scatter(wxp, wyp, s= 0.04, c= cv, cmap='YlOrRd', marker=">")
+                    #for i in range(0, np.shape(wxp)[0]):
+                        #ax.plot(wxp[i, :], wyp[i, :], '.r-', markersize = 1.5, linewidth=0.01)
 
-
-                    for i in range(0, np.shape(wxp)[0]):
-                        ax.plot(wxp[i, :], wyp[i, :], '.r-', markersize = 1.5, linewidth=0.01)
-
-                    ax.plot(x_arrive, y_arrive, '.k', markersize = 3, linestyle='None')#linewidth=0.0001)
+                    ax.scatter(x_arrive, y_arrive, facecolors='none', s=3, edgecolor='k', linewidth=0.6,
+                               alpha=0.6)  # linewidth=0.0001)
                     #ax.plot(xep, yep, '.w', markersize = 3,linestyle='None')# linewidth=0.0001)
                     plt.savefig(save_path2, dpi=400)
+                    plt.close(fig)
+    return
+
+
+def plot_retention(list_dir, sub_idx):
+    key_list = list(sub_idx.keys())
+    for sub_key in key_list:
+        filepath = list_dir[sub_key + '_folder'] + 'retention.npy'
+        save_path = list_dir[sub_key + '_folder'] + 'retention.png'
+        if not os.path.exists(filepath):
+            print('Error: Directory ' + filepath + ' with intermediate matrix does not exist, exiting')
+            sys.exit()
+        else:
+            df = np.load(filepath)
+            xlist = df[:, 0]
+            ylist = df[:, 1]
+            clist = df[:, 2]
+            depth = np.load(list_dir['depth_file'])
+            grid_lims = dict()
+            grid_lims['idlimx'] = [np.nanmax([np.nanmin(xlist) - 20, 0]),
+                                   np.nanmin([np.nanmax(xlist) + 20, np.shape(depth)[1]])]
+            grid_lims['idlimy'] = [np.nanmax([np.nanmin(ylist) - 20, 0]),
+                                   np.nanmin([np.nanmax(ylist) + 20, np.shape(depth)[0]])]
+            fig, ax = plot_background(list_dir, grid_lims)
+            ax.scatter(xlist, ylist, s=10, facecolor='none', edgecolors='gray', alpha = 0.2)
+            lim = 0.25*np.nanmean(clist)
+            p2 = ax.scatter(xlist[clist>lim], ylist[clist>lim], s=10, c=clist[clist>lim], cmap='YlOrBr', edgecolors='gray', vmin=np.nanmin(clist),
+                            vmax=np.nanmean(clist)*1.75)
+            fig.colorbar(p2, label='hours')
+            # plt.legend(loc='upper center', bbox_to_anchor=(1.23, 1), ncol=1, fancybox=True, shadow=True, title='s2')
+            plt.savefig(save_path, dpi=400)
+            plt.close(fig)
+
     return
 
 
@@ -135,14 +222,10 @@ def animate_transit(list_dir, sub_idx):
                 sys.exit()
             else:
                 df = np.load(filepath)
-                # if sub_key == 'SO' and target_area == 'SG':
-                #     breakpoint()
                 x = df[:, 0]
                 y = df[:, 1]
                 t = df[:, 2]
         # Calculate the fraction that reach SOI, the mean time, std, etc., plot histogram;
-                x_arrive = x[x > 0.1]
-                y_arrive = y[y > 0.1]
                 t_arrive = t[t > 0.1]
                 t_arrive = t_arrive / 24
                 if np.shape(t_arrive)[0] == 0:
@@ -155,36 +238,12 @@ def animate_transit(list_dir, sub_idx):
                     sub_id = np.sum(wormx, axis=1) > 0
                     x_end = df[:, 3]
                     y_end = df[:, 4]
-                    xe = x_end#[sub_id]
-                    ye = y_end#[sub_id]
-                    wx = wormx#[sub_id, :]
-                    wy = wormy#[sub_id, :]
-                    if len(wx) < 1000:
-                        sub = 1
-                    else:
-                        sub = 10
-                    skip = (slice(None, None, sub), slice(None, None, sub))
-                    skip2 = slice(None, None, sub)
-                    wxp = wx  # [skip]
-                    wyp = wy  # [skip]
-                    # xep = xe #[skip2]
-                    # yep = ye #[skip2]
-                    # breakpoint()
+                    wx = wormx#
+                    wy = wormy
+                    wxp = wx
+                    wyp = wy
                     wxp[wxp == 0] = np.nan
                     wyp[wyp == 0] = np.nan
-                    # wxp = wx[skip]
-                    # wyp = wy[skip]
-                    # # xep = xe[skip2]
-                    # # yep = ye[skip2]
-                    # # breakpoint()
-                    # # wxp = wx
-                    # # wyp = wy
-                    # wxp[wxp == 0] = np.nan
-                    # wyp[wyp == 0] = np.nan
-
-                    # wx[wx==0] = np.nan
-                    # #wy[wy == 0] = np.nan
-                    # breakpoint()
 
                     grid_lims = dict()
                     depth = np.load(list_dir['depth_file'])
@@ -199,11 +258,8 @@ def animate_transit(list_dir, sub_idx):
                     for i in range(0, max_steps):
                         container = ax.plot(wxp[:, i*5], wyp[:, i*5], 'r.', markersize=1.5, linewidth=0.8)
                         artists.append(container)
-                        # ax.plot(x_arrive, y_arrive, '.k', markersize = 3, linestyle='None')#linewidth=0.0001)
-                        # ax.plot(xep, yep, '.w', markersize = 3,linestyle='None')# linewidth=0.0001)
 
                     ani = animation.ArtistAnimation(fig=fig, artists=artists, interval=2)
-                    # plt.show()
                     ani.save(filename=save_path, dpi=400, writer=PillowWriter(fps=30))
     return
 
