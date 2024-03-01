@@ -64,8 +64,8 @@ def plot_connectivity(list_dir, sub_idx):
                     grid_lims['idlimy'] = [np.nanmax([np.nanmin(yl1) - 20, 0]),
                                            np.nanmin([np.nanmax(yl1) + 20, np.shape(depth)[0]])]
                     fig, ax = plot_background(list_dir, grid_lims)
-                    ax.scatter(xl1, yl1, s= 10, c='w', edgecolors='gray', alpha =0.15)
-                    p2 = ax.scatter(xlist, ylist, s= 10, c=tot_part, cmap='jet', edgecolors='gray', vmin = np.nanmin(tot_part), vmax = np.nanmax(tot_part))
+                    ax.scatter(xl1, yl1, s= 10, c='w', edgecolors='gray', alpha =0.3, linewidth=0.2)
+                    p2 = ax.scatter(xlist, ylist, s= 10, c=tot_part, cmap='jet', edgecolors='gray', linewidth=0.2, vmin = np.nanmin(tot_part), vmax = np.nanmax(tot_part))
                     fig.colorbar(p2, label='Number of particles')
                     #plt.legend(loc='upper center', bbox_to_anchor=(1.23, 1), ncol=1, fancybox=True, shadow=True, title='s2')
                     plt.savefig(save_path, dpi=400)
@@ -196,10 +196,10 @@ def plot_retention(list_dir, sub_idx):
             grid_lims['idlimy'] = [np.nanmax([np.nanmin(ylist) - 20, 0]),
                                    np.nanmin([np.nanmax(ylist) + 20, np.shape(depth)[0]])]
             fig, ax = plot_background(list_dir, grid_lims)
-            ax.scatter(xlist, ylist, s=10, facecolor='none', edgecolors='gray', alpha = 0.2)
+            ax.scatter(xlist, ylist, s=10, facecolor='none', edgecolors='gray', alpha = 0.3, linewidth=0.2)
             lim = 0.25*np.nanmean(clist)
             p2 = ax.scatter(xlist[clist>lim], ylist[clist>lim], s=10, c=clist[clist>lim], cmap='YlOrBr', edgecolors='gray', vmin=np.nanmin(clist),
-                            vmax=np.nanmean(clist)*1.75)
+                            vmax=np.nanmean(clist)*1.75, linewidth=0.2)
             fig.colorbar(p2, label='hours')
             # plt.legend(loc='upper center', bbox_to_anchor=(1.23, 1), ncol=1, fancybox=True, shadow=True, title='s2')
             plt.savefig(save_path, dpi=400)

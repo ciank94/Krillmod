@@ -21,7 +21,7 @@ sub_idx = ssmu_start(list_dir['reg_file'])
 list_dir = lagrangian_analysis(comp_node, list_dir, sub_idx)
 
 # plot trajectories
-#plot_connectivity(list_dir, sub_idx)
+plot_connectivity(list_dir, sub_idx)
 #plot_transit(list_dir, sub_idx)
 #plot_dom_paths(list_dir, sub_idx)
 plot_retention(list_dir, sub_idx)
