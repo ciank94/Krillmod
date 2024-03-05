@@ -72,7 +72,7 @@ def retention_times(idv, list_dir, sub_key):
 
     for i in range(0, np.shape(store_mat)[0]):
         ids = np.arange(i,np.shape(x)[0], np.shape(store_mat)[0])
-        store_mat[i,2] = np.nanmean(temp_vec[ids])
+        store_mat[i, 2] = np.nanmean(temp_vec[ids])
 
     save_path = list_dir[sub_key + '_folder'] + 'retention.npy'
     np.save(save_path, store_mat)

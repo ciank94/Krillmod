@@ -29,3 +29,27 @@ plot_retention(list_dir, sub_idx)
 #animate_transit(list_dir, sub_idx)
 #animate_dom_paths(list_dir, sub_idx)
 
+
+
+
+
+##### Extra;
+# import netCDF4 as nc
+# import matplotlib.pyplot as plt
+# import numpy as np
+# dl_file = 'A:/Cian_sinmod/meeso_sim/sim_generic/DL_save.nc'
+# dl = nc.Dataset(dl_file)
+# l_vals = dl.variables['DL']
+# d = 6
+# l = 0
+# light_sample = l_vals[d,l,:,:]
+# t = dl.variables['time'][d]
+# title_x = ('time= ' + str(t[2]) + '.' + str(t[1]) + '.' + str(t[0]) + ' ' + str(t[3]) + ':' + str(t[4]) + ':' + str(t[5]) +
+#            '     ' + str('layer') + '= ' + str(l))
+# plt.contourf(light_sample)
+# plt.title(title_x)
+# plt.colorbar()
+# plt.savefig('C:/Users/ciank/PycharmProjects/sinmod/Krillmod/dl.png',dpi=400)
+# #plt.show()
+#
+
