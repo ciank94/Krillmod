@@ -8,7 +8,7 @@ import pandas as pd
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from mpl_toolkits.basemap import Basemap
 import os
-from analyse_trajectory import ssmu_target
+#from analyse_trajectory import ssmu_target
 from matplotlib.animation import PillowWriter
 import matplotlib.cm as cm
 import matplotlib.animation as animation
@@ -19,7 +19,8 @@ def plot_connectivity(list_dir, sub_idx):
     print('Key list for analysis: ')
     print(key_list)
     for sub_key in key_list:
-        subs = ssmu_target(sub_key)  # Target regions stored in dictionary (there may be multiple target areas);
+        #subs = ssmu_target(sub_key)  # Target regions stored in dictionary (there may be multiple target areas);
+        subs=1
         for target_area in subs:
             filepath = list_dir[sub_key + '_folder'] + target_area + '_' + 'transit.npy'
             save_path = list_dir[sub_key + '_folder'] + target_area + '_' + 'connect.png'
@@ -83,7 +84,8 @@ def plot_transit(list_dir, sub_idx):
     print('Key list for analysis: ')
     print(key_list)
     for sub_key in key_list:
-        subs = ssmu_target(sub_key)  # Target regions stored in dictionary (there may be multiple target areas);
+        #subs = ssmu_target(sub_key)  # Target regions stored in dictionary (there may be multiple target areas);
+        subs=1
         for target_area in subs:
             filepath = list_dir[sub_key + '_folder'] + target_area + '_' + 'transit.npy'
             save_path = list_dir[sub_key + '_folder'] + target_area + '_' + 'transit.png'
@@ -458,3 +460,25 @@ def add_latlon(idxlimx, idxlimy):
     return
 
 
+# def plot_regions(list_dir):
+#     import matplotlib.pyplot as plt
+#     from plot_trajectory import plot_background
+#     import numpy as np
+#
+#     filepath = list_dir['shape_folder'] + str('poly2grid.npy')
+#     depth = np.load(list_dir['depth_file'])
+#     df = np.load(filepath)
+#     df[np.isnan(depth)] = np.nan
+#     df[df < 0] = -100
+#     list_ids = np.where([df > 0])
+#     grid_lims = dict()
+#     grid_lims['idlimx'] = [np.nanmax([np.nanmin(list_ids[2]) - 50, 0]),
+#                            np.nanmin([np.nanmax(list_ids[2]) + 20, np.shape(depth)[1]])]
+#     grid_lims['idlimy'] = [np.nanmax([np.nanmin(list_ids[1]) - 100, 0]),
+#                            np.nanmin([np.nanmax(list_ids[1]) + 50, np.shape(depth)[0]])]
+#     fig, ax = plot_background(list_dir, grid_lims)
+#     cmap1 = plt.get_cmap('coolwarm')  # Oranges, Reds- sequential coolwarm= divergent, jet, seismic
+#     ax.contourf(df, levels=np.arange(0, 1, 0.1), extend='both', cmap=cmap1)
+#     plt.savefig(list_dir['shape_folder'] + 'regions.png', dpi=400)
+#     plt.close(fig)
+#     return
