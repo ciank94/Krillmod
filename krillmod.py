@@ -9,7 +9,7 @@ from plot_trajectory import (plot_connectivity, plot_retention, plot_transit, pl
 
 # Define names of main folders
 trj_folder = 'A:/Cian_sinmod/meeso_sim/sim_'  # trajectory folder
-sim_folder = 'generic'  # Name of simulation instance
+sim_folder = '2019'  # Name of simulation instance
 shp_name = 'ssmusPolygon.shp'  # Name of shape polygon if relevant
 
 # Setup directory information for analysis
@@ -24,7 +24,8 @@ k = Trajectory(f)
 df = Analyse(f)
 #df.ssmu_target('WAP')
 #df.dom_paths(k)
-df.depth_profile(k)
+#df.depth_profile(k)
+df.transit_times('ALL', k)
 breakpoint()
 
 #store_regions(f)

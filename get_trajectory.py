@@ -41,9 +41,25 @@ class Trajectory:
         slice_t = slice(act_t, self.t_max, 1)
         return slice_i, slice_t
 
+    def get_slice(self, t_id):
+        x = self.x[t_id, :]
+        y = self.y[t_id, :]
+        a_id = self.active[t_id, :]
+        bool_act = a_id == 1
+        x_act = x[bool_act]
+        y_act = y[bool_act]
+        return x_act, y_act, bool_act
+
+    def get_slice_z(self, t_id):
+        z = self.z[t_id, :]
+        a_id = self.active[t_id, :]
+        bool_act = a_id == 1
+        z_act = z[bool_act]
+        return z_act
+
     def in_region(self, x, y):
         # Function for finding polygon of individuals from polygrid.npy
-        p_id = self.poly[x, y]
+        p_id = self.poly[y, x]
         return p_id
 
     def subset_data(self, id_start, id_end):
@@ -51,9 +67,6 @@ class Trajectory:
         self.x = self.x[id_start:id_end, :]
         self.y = self.y[id_start:id_end, :]
         return
-
-
-
 
     def sim_account(self, f):
         # Note: Adapt this file for  new data storage
