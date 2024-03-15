@@ -20,16 +20,20 @@ class Analyse:
         return
 
     def dom_paths(self, k):
-        depth = k.depth
-        df = np.zeros(np.shape(depth))
-        df[np.isnan(depth)] = np.nan
-        for t_id in range(0, k.t_max):
-            x_act, y_act, bool_act = k.get_slice(t_id)
-            df[y_act.astype(int), x_act.astype(int)] = df[y_act.astype(int), x_act.astype(int)] + 1
-        df[df > 0] = ((df[df > 0]) / k.n_parts) * 100
-        print('Saving: ' + self.dom_file)
-        np.save(self.dom_file, df)
-        return
+        if not os.path.exists(self.dom_file):
+            df = np.zeros(np.shape(k.depth))
+            df[np.isnan(k.depth)] = np.nan
+            for p_id in range(0, k.p_max):
+                yi = k.y[p_id, :]
+                xi = k.x[p_id, :]
+                df[yi, xi] = df[yi, xi] + 1
+            df[df > 0] = ((df[df > 0]) / k.p_max) * 100
+
+            print('Saving: ' + self.dom_file)
+            np.save(self.dom_file, df)
+        else:
+            print('Directory: ' + self.dom_file + ' already exists, skipping')
+            return
 
     def depth_profile(self, k):
         max_depth = 200
@@ -52,35 +56,35 @@ class Analyse:
 
     def transit_times(self, key, k):
         self.ssmu_target(key)
-        # depth = k.depth
-        # df = np.zeros(np.shape(depth))
-        # df[np.isnan(depth)] = np.nan
         f_name = self.transit_file
         for keys in self.end_key:
             key_vals = self.end_key[keys]
             self.transit_file = f_name + keys + '_transit.npy'
+            if not os.path.exists(self.transit_file):
+                transit_mat = np.zeros([k.p_max, 5])
+                for i in range(0, k.p_max):
+                    act_id = k.act_part[i]  # when particle becomes active
+                    visit_reg = k.in_reg[i, :]  # All the regions particle visits
+                    if not np.isin(k.in_reg[i, act_id], key_vals):  # Make sure it doesn't start in region
+                        ids = np.where(np.isin(visit_reg, key_vals))  # where there are overlaps
+                        if not np.shape(ids)[0] * np.shape(ids)[1] == 0:
+                            transit_mat[i, 0] = k.x[i, act_id]
+                            transit_mat[i, 1] = k.y[i, act_id]
+                            date_0 = k.time[act_id]  # time particle became active
+                            date_1 = k.time[ids[0][0]]  # time particle reached the target destination;
+                            timeframe = date_1 - date_0
+                            transit_hours = (timeframe.days * 24) + np.floor(timeframe.seconds * 1 / (60 * 60))
+                            transit_mat[i, 2] = transit_hours
+                            transit_mat[i, 3] = k.x[i, ids[0][0]]
+                            transit_mat[i, 4] = k.y[i, ids[0][0]]
 
-            self.t_mat = np.zeros([np.shape(k.x)[1]])
-            td_mat = np.zeros([np.shape(k.x)[1]])
-            ret_mat = np.zeros([np.shape(k.x)[1]])
+                print('Saving ' + self.transit_file)
+                np.save(self.transit_file, transit_mat)
+            else:
+                print('Directory: ' + self.transit_file + ' already exists, skipping')
+        return
 
-            for t_id in range(0, np.shape(k.x)[0]):
-                x_act, y_act, bool_act = k.get_slice(t_id)
-                in_reg = k.in_region(x_act.astype(int), y_act.astype(int))
 
-                if t_id == 0:
-                    start_region = in_reg
-                    start_idx = np.isin(start_region, key_vals)
-                    self.t_mat[bool_act] = start_idx
-                    self.t_mat[self.t_mat == 1] = np.nan
-                else:
-                    idx = np.isin(in_reg, key_vals)
-                    temp_vec = self.t_mat[bool_act]
-                    idv = (temp_vec == 0) * idx
-                    self.t_mat[bool_act] = idv*t_id
-
-            print('Saving ' + self.transit_file)
-            np.save(self.transit_file, self.t_mat)
 
 
 

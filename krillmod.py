@@ -1,6 +1,6 @@
 # master file for krill model analysis
 from set_directory import Folder
-from get_trajectory import Trajectory
+from get_trajectory import Trajectory, Regional
 from analyse_trajectory import Analyse
 #from get_trajectory import store_regions
 #from analyse_trajectory import lagrangian_analysis, ssmu_start, sim_account
@@ -9,7 +9,7 @@ from plot_trajectory import (plot_connectivity, plot_retention, plot_transit, pl
 
 # Define names of main folders
 trj_folder = 'A:/Cian_sinmod/meeso_sim/sim_'  # trajectory folder
-sim_folder = '2019'  # Name of simulation instance
+sim_folder = 'generic'  # Name of simulation instance
 shp_name = 'ssmusPolygon.shp'  # Name of shape polygon if relevant
 
 # Setup directory information for analysis
@@ -17,44 +17,32 @@ f = Folder(trj_folder, sim_folder, shp_name)  # Initialize folders
 f.set_folder('local')  # Sets folders based on remote or local node
 f.exist()  # Checks existence of relevant folders and files
 
-# Now make a class with the trajectory data:
-k = Trajectory(f)
+# Two classes for dealing with data:
+k_r = Regional(f)
+#k_t = Trajectory(f)
+
+# Some analysis
+
 
 # Now the analysis
 df = Analyse(f)
 #df.ssmu_target('WAP')
-#df.dom_paths(k)
+df.dom_paths(k_r)
 #df.depth_profile(k)
-df.transit_times('ALL', k)
-breakpoint()
+df.transit_times('ALL', k_r)
+
 
 #store_regions(f)
 
-
-# # Define directories
-#shape_name = 'mpasPolygon.shp'
-# traj_folder = 'A:/Cian_sinmod/meeso_sim/sim_'  # Directory where the trajectory file is stored
-# #traj_folder = '/cluster/projects/nn9828k/Cian_sinmod/meeso_sim/sim_'  # Directory where the trajectory file is stored
-# #traj_folder = 'C:/Users/ciank/PycharmProjects/sinmod/Krillmod/sim_'
-#
-#
-# #for sim_folder in ['2016', '2017', '2018', '2019']:
-# shape_name = 'ssmusPolygon.shp'
-# sim_folder = 'generic'
-# comp_node = 'local'
-# list_dir = locate_folders(comp_node, sim_folder, traj_folder, shape_name)
-#
-# # Simulation summary:
-# sim_account(list_dir)
 #
 # # Analyse trajectories:
 # sub_idx = ssmu_start(list_dir['reg_file'])
 # list_dir = lagrangian_analysis(comp_node, list_dir, sub_idx)
 
 # plot trajectories
-#plot_connectivity(list_dir, sub_idx)
-#plot_transit(list_dir, sub_idx)
-#plot_dom_paths(list_dir, sub_idx)
+plot_connectivity(f, k_r)
+#plot_transit(f)
+#plot_dom_paths(f, k_r)
 #plot_retention(list_dir, sub_idx)
 
 #animate_transit(list_dir, sub_idx)
