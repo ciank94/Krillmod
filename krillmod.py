@@ -5,31 +5,36 @@ from analyse_trajectory import Analyse
 #from get_trajectory import store_regions
 #from analyse_trajectory import lagrangian_analysis, ssmu_start, sim_account
 from plot_trajectory import (plot_connectivity, plot_retention, plot_transit, plot_dom_paths,
-                             animate_transit, animate_dom_paths)
+                             plot_depth_profile, animate_transit, animate_dom_paths)
 
-# Define names of main folders
-trj_folder = 'A:/Cian_sinmod/meeso_sim/sim_'  # trajectory folder
-sim_folder = 'generic'  # Name of simulation instance
-shp_name = 'ssmusPolygon.shp'  # Name of shape polygon if relevant
+yrs = ['2017']
+for y in yrs:
+    # Define names of main folders
+    trj_folder = 'A:/Cian_sinmod/meeso_sim/sim_'  # trajectory folder
+    sim_folder = y  # Name of simulation instance
+    shp_name = 'ssmusPolygon.shp'  # Name of shape polygon if relevant
 
-# Setup directory information for analysis
-f = Folder(trj_folder, sim_folder, shp_name)  # Initialize folders
-f.set_folder('local')  # Sets folders based on remote or local node
-f.exist()  # Checks existence of relevant folders and files
+    # Setup directory information for analysis
+    f = Folder(trj_folder, sim_folder, shp_name)  # Initialize folders
+    f.set_folder('local')  # Sets folders based on remote or local node
+    f.exist()  # Checks existence of relevant folders and files
 
-# Two classes for dealing with data:
-k_r = Regional(f)
-#k_t = Trajectory(f)
+    # Two classes for dealing with data:
+    k_r = Regional(f)
+    k_t = Trajectory(f)
 
-# Some analysis
+    # Now the analysis
+    df = Analyse(f)
+    df.dom_paths(k_r)
+    df.depth_profile(k_t) #Note
+    df.retention_times(k_r)
+    df.transit_times('ALL', k_r)
 
-
-# Now the analysis
-df = Analyse(f)
-#df.ssmu_target('WAP')
-df.dom_paths(k_r)
-#df.depth_profile(k)
-df.transit_times('ALL', k_r)
+    plot_depth_profile(f)
+    # plot_connectivity(f, k_r)
+    # plot_transit(f)
+    # plot_dom_paths(f, k_r)
+    # plot_retention(f)
 
 
 #store_regions(f)
@@ -40,7 +45,7 @@ df.transit_times('ALL', k_r)
 # list_dir = lagrangian_analysis(comp_node, list_dir, sub_idx)
 
 # plot trajectories
-plot_connectivity(f, k_r)
+#plot_connectivity(f, k_r)
 #plot_transit(f)
 #plot_dom_paths(f, k_r)
 #plot_retention(list_dir, sub_idx)
@@ -91,3 +96,17 @@ plot_connectivity(f, k_r)
 #tr_file = 'C:/Users/ciank/PycharmProjects/sinmod/Krillmod/sim_generic/trajectory.nc'
 #tr_file= 'A:/Cian_sinmod/meeso_sim/sim_generic/trajectory.nc'
 #tr = nc.Dataset(tr_file, "r", format="NETCDF4")
+
+  # import matplotlib.pyplot as plt
+    # import numpy as np
+    # shp = np.shape(k_t.light)[0]
+    # k_l = np.zeros(shp)
+    # for i in range(0, shp):
+    #     l_range = k_t.light[i, 0:4500]
+    #     k_l[i] = np.nanmean(l_range[l_range>0])
+    #
+    # plt.scatter(k_l)
+    # breakpoint()
+
+
+    # Some analysis

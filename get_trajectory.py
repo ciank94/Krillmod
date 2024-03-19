@@ -117,6 +117,7 @@ class Trajectory:
         self.i_max = np.shape(self.depth)[0]
         self.j_max = np.shape(self.depth)[1]
         self.active = self.nc_file['active']
+        #self.light = self.nc_file['light_exp']
 
         # Derived data, batches and number of batches, when batches arrive
         self.n_sites = np.sum(self.active[0, :])

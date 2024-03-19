@@ -13,6 +13,23 @@ from matplotlib.animation import PillowWriter
 import matplotlib.cm as cm
 import matplotlib.animation as animation
 
+#class Plotting:
+
+def plot_depth_profile(f):
+    filepath = f.save + f.sim + '/depth_profile.npy'
+    savepath = f.save + f.sim + '/depth_profile.png'
+    z = np.load(filepath)
+    fig, ax = plt.subplots()
+    f1 = ax.contourf(z)
+    ax1 = f1.axes
+    ax1.invert_yaxis()
+    f1.set_cmap('hot')
+    ax.set_xlabel('Time step', fontsize=13)
+    ax.set_ylabel('Depth (m)', fontsize=13)
+    plt.savefig(savepath, dpi=400)
+    plt.close(fig)
+
+
 
 def plot_connectivity(f, k_r):
     key_list = ['SO', 'SG']
@@ -121,35 +138,32 @@ def plot_transit(f):
     return
 
 
-def plot_retention(list_dir, sub_idx):
-    key_list = list(sub_idx.keys())
-    for sub_key in key_list:
-        filepath = list_dir[sub_key + '_folder'] + 'retention.npy'
-        save_path = list_dir[sub_key + '_folder'] + 'retention.png'
-        if not os.path.exists(filepath):
-            print('Error: Directory ' + filepath + ' with intermediate matrix does not exist, exiting')
-            sys.exit()
-        else:
-            df = np.load(filepath)
-            xlist = df[:, 0]
-            ylist = df[:, 1]
-            clist = df[:, 2]
-            depth = np.load(list_dir['depth_file'])
-            grid_lims = dict()
-            grid_lims['idlimx'] = [np.nanmax([np.nanmin(xlist) - 20, 0]),
-                                   np.nanmin([np.nanmax(xlist) + 20, np.shape(depth)[1]])]
-            grid_lims['idlimy'] = [np.nanmax([np.nanmin(ylist) - 20, 0]),
+def plot_retention(f):
+    filepath = f.save + f.sim + '/retention.npy'
+    save_path = f.save + f.sim + '/retention.png'
+    if not os.path.exists(filepath):
+        print('Error: Directory ' + filepath + ' with intermediate matrix does not exist, exiting')
+        sys.exit()
+    else:
+        df = np.load(filepath)
+        xlist = df[:, 0]
+        ylist = df[:, 1]
+        clist = df[:, 2]
+        depth = np.load(f.depth_file)
+        grid_lims = dict()
+        grid_lims['idlimx'] = [np.nanmax([np.nanmin(xlist) - 20, 0]),
+                                np.nanmin([np.nanmax(xlist) + 20, np.shape(depth)[1]])]
+        grid_lims['idlimy'] = [np.nanmax([np.nanmin(ylist) - 20, 0]),
                                    np.nanmin([np.nanmax(ylist) + 20, np.shape(depth)[0]])]
-            fig, ax = plot_background(list_dir, grid_lims)
-            ax.scatter(xlist, ylist, s=10, facecolor='none', edgecolors='gray', alpha = 0.3, linewidth=0.2)
-            lim = 0.25*np.nanmean(clist)
-            p2 = ax.scatter(xlist[clist>lim], ylist[clist>lim], s=10, c=clist[clist>lim], cmap='YlOrBr', edgecolors='gray', vmin=np.nanmin(clist),
+        fig, ax = plot_background(f,grid_lims)
+        ax.scatter(xlist, ylist, s=10, facecolor='none', edgecolors='gray', alpha = 0.3, linewidth=0.2)
+        lim = 0.25*np.nanmean(clist)
+        p2 = ax.scatter(xlist[clist>lim], ylist[clist>lim], s=10, c=clist[clist>lim], cmap='YlOrBr', edgecolors='gray', vmin=np.nanmin(clist),
                             vmax=np.nanmean(clist)*1.75, linewidth=0.2)
-            fig.colorbar(p2, label='hours')
-            # plt.legend(loc='upper center', bbox_to_anchor=(1.23, 1), ncol=1, fancybox=True, shadow=True, title='s2')
-            plt.savefig(save_path, dpi=400)
-            plt.close(fig)
-
+        fig.colorbar(p2, label='hours')
+        # plt.legend(loc='upper center', bbox_to_anchor=(1.23, 1), ncol=1, fancybox=True, shadow=True, title='s2')
+        plt.savefig(save_path, dpi=400)
+        plt.close(fig)
     return
 
 
