@@ -10,10 +10,9 @@ class Regional:
     name = 'Regional'
 
     def __init__(self, f):
-        self.reg_file = f.save + f.sim + '/regions.nc'
+        self.reg_file = f.save + '/regions.nc'
 
         if not os.path.exists(self.reg_file):
-            self.poly = np.load(f.poly_file)
             print('Note: Creating intermediate file ' + self.reg_file)
             self.init_reg_file(f)
 
@@ -26,9 +25,7 @@ class Regional:
         self.x = self.nc_file['xp']
         self.y = self.nc_file['yp']
         self.z = self.nc_file['zp']
-        self.in_reg = self.nc_file['in_region']
         self.act_part = self.nc_file['act_part']
-        self.start = self.nc_file['start']
         self.p_max = np.shape(self.x)[0]
         self.t_max = np.shape(self.x)[1]
         self.i_max = np.shape(self.depth)[0]
@@ -45,7 +42,6 @@ class Regional:
         shp_t = np.shape(x)[0]
 
         act_poly = np.zeros(shp_i, dtype=np.int16)
-        in_area = np.zeros([shp_i, shp_t], dtype=np.int16)
         x_t = np.zeros([shp_i, shp_t], dtype=np.int16)
         y_t = np.zeros([shp_i, shp_t], dtype=np.int16)
         z_t = np.zeros([shp_i, shp_t], dtype=np.int16)
@@ -56,22 +52,10 @@ class Regional:
             z_t[:, t] = z[t, :].astype(int)
             act_t = act[t, :].astype(int)
             act_poly = act_poly + act_t
-            in_area[:, t] = self.poly[y_t[:, t], x_t[:, t]]
             print('t = ' + str(t) + ' of ' + str(shp_t) + ' steps')
             print('Percent complete = ' + str(np.ceil((t / shp_t) * 100)))
 
         act_poly = shp_t - act_poly  # Index of activity
-        list_start = np.unique(act_poly).astype(int)  # find starting points of each individual
-        start_point = np.zeros(shp_i)
-        for i in range(0, len(list_start)):
-            id1 = list_start[i]
-            log_id1 = act_poly == id1
-            in_polt = in_area[log_id1, id1:shp_t]
-            if np.shape(in_polt)[0] * np.shape(in_polt)[1] <= 0:
-                print('Empty start areas ' + str(np.shape(in_polt)))
-            else:
-                start_point[log_id1] = in_polt[:, 0]
-
         nc_file = nc.Dataset(self.reg_file, mode='w', format='NETCDF4_CLASSIC')
 
         # Specify nc dimensions
@@ -80,8 +64,6 @@ class Regional:
 
         # Create variable for storing presence/ absence in each region at each time:
         act_ind = nc_file.createVariable('act_part', np.int16, 'particle')
-        start_area = nc_file.createVariable('start', np.int16, 'particle')
-        in_region = nc_file.createVariable('in_region', np.int16, ('particle', 'time'))
         xv = nc_file.createVariable('xp', np.int16, ('particle', 'time'))
         yv = nc_file.createVariable('yp', np.int16, ('particle', 'time'))
         zv = nc_file.createVariable('zp', np.int16, ('particle', 'time'))
@@ -91,8 +73,6 @@ class Regional:
         xv[:] = x_t
         yv[:] = y_t
         zv[:] = z_t
-        in_region[:] = in_area
-        start_area[:] = start_point
 
         print(nc_file)
         nc_file.close()
@@ -120,7 +100,7 @@ class Trajectory:
         #self.light = self.nc_file['light_exp']
 
         # Derived data, batches and number of batches, when batches arrive
-        self.n_sites = np.sum(self.active[0, :])
+        self.n_sites = np.sum(self.active[1, :])
         self.n_parts = np.shape(self.x)[1]
         self.n_batches = np.floor(self.n_parts/self.n_sites).astype(int)
         self.sim_account(f)
@@ -162,7 +142,7 @@ class Trajectory:
     def sim_account(self, f):
         # Note: Adapt this file for  new data storage
         # Access regional file and look at number of particles, number of batches, individuals in each batch
-        summary_file = f.save + f.sim + '/sim_summary.txt'
+        summary_file = f.save + 'sim_summary.txt'
         if not os.path.exists(summary_file):
             print('')
             print('Saving: ' + summary_file)

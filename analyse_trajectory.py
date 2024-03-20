@@ -14,19 +14,21 @@ class Analyse:
         self.end_key = dict()  # specify the target end point of individuals
 
         # Save files:
-        self.transit_file = f.save + f.sim + '/'
-        self.dom_file = f.save + f.sim + '/dominant_paths.npy'  # save dominant paths
-        self.depth_file = f.save + f.sim + '/depth_profile.npy'  # save dominant paths
-        self.retention_file = f.save + f.sim + '/retention.npy'  # save dominant paths
+        self.transit_file = f.save + '/'
+        self.dom_file = f.save + 'dominant_paths.npy'  # save dominant paths
+        self.depth_file = f.save + 'depth_profile.npy'  # save dominant paths
+        self.retention_file = f.save + 'retention.npy'  # save dominant paths
         return
 
     def dom_paths(self, k):
         if not os.path.exists(self.dom_file):
             df = np.zeros(np.shape(k.depth))
             df[np.isnan(k.depth)] = np.nan
+            x_all = k.x[:]
+            y_all = k.y[:]
             for p_id in range(0, k.p_max):
-                yi = k.y[p_id, :]
-                xi = k.x[p_id, :]
+                yi = y_all[p_id, :]
+                xi = x_all[p_id, :]
                 df[yi, xi] = df[yi, xi] + 1
             df[df > 0] = ((df[df > 0]) / k.p_max) * 100
 
@@ -93,26 +95,25 @@ class Analyse:
             temp_vec = np.zeros(np.shape(k.x)[0])
             x = np.array(k.x[:])
             y = np.array(k.y[:])
-            store_mat = np.array([x[0:np.sum(act_part==0),0], y[0:np.sum(act_part==0),0], np.zeros(np.shape(y[0:np.sum(act_part==0), 0]))]).T
+            store_mat = np.array([x[0:np.sum(act_part==1),1], y[0:np.sum(act_part==1),1], np.zeros(np.shape(y[0:np.sum(act_part==1), 1]))]).T
             for i in range(0, np.shape(k.x)[0]):
                 act_id = act_part[i]
                 xt = x[i, act_id:np.shape(x)[1]].astype(float)
                 yt = y[i, act_id:np.shape(y)[1]].astype(float)
-                y_dist = (yt - yt[0])**2
-                x_dist = (xt - xt[0])**2
-                #y_dist[y_dist <= 0] = 0.0001
-                #x_dist[x_dist <= 0] = 0.0001
-                dist_t = np.sqrt(x_dist + y_dist)
-                cond = np.where(dist_t > d_lim)
-                if np.shape(cond)[0]*np.shape(cond)[1] > 0:
-                    lim_v = cond[0][0] + act_id
-                    date_0 = time[act_id]  # time particle became active
-                    date_1 = time[lim_v]  # time particle reached the target destination;
-                    timeframe = date_1 - date_0
-                    transit_hours = (timeframe.days * 24) + np.floor(timeframe.seconds * 1 / (60 * 60))
-                    temp_vec[i] = transit_hours
-                else:
-                    temp_vec[i] = np.nan
+                if np.shape(yt)[0] > 0:
+                    y_dist = (yt - yt[0])**2
+                    x_dist = (xt - xt[0])**2
+                    dist_t = np.sqrt(x_dist + y_dist)
+                    cond = np.where(dist_t > d_lim)
+                    if np.shape(cond)[0]*np.shape(cond)[1] > 0:
+                        lim_v = cond[0][0] + act_id
+                        date_0 = time[act_id]  # time particle became active
+                        date_1 = time[lim_v]  # time particle reached the target destination;
+                        timeframe = date_1 - date_0
+                        transit_hours = (timeframe.days * 24) + np.floor(timeframe.seconds * 1 / (60 * 60))
+                        temp_vec[i] = transit_hours
+                    else:
+                        temp_vec[i] = np.nan
 
             for i in range(0, np.shape(store_mat)[0]):
                 ids = np.arange(i, np.shape(x)[0], np.shape(store_mat)[0])
@@ -122,86 +123,6 @@ class Analyse:
             print('Directory: ' + self.retention_file + ' already exists, skipping')
         return
 
-    def ssmu_target(self, key):
-        # Hard-coded indices for particles starting in ssmu's. This can be adapted for both time and region;
-        # Below is the id number for each of the ssmu regions:
-        # !(AP: 1:APPA; 2: APW; 3: DPW; 4: DPE; 5: BSW; 6:BSE; 7: EI; 17: APE)
-        # !(SOI: 8: SOPA; 9: SOW; 10:SONE; 11: SOSE)
-        # !(SG: 12: SGPA; 13: SGW; 14:SGE)
-        # !(SSI: 15: SSPA; 16: SSI)
-        self.begin_key = key
-        if key == 'WAP':
-            self.end_key['SO'] = np.arange(9, 11 + 1)  # SO neritic zone target
-            self.end_key['SG'] = np.arange(12, 14 + 1)  # SG neritic zone target
-        elif key == 'SO':
-            self.end_key['SG'] = np.arange(13, 14 + 1)
-        elif key == 'ALL':
-            self.end_key['SO'] = np.arange(9, 11 + 1)
-            self.end_key['SG'] = np.arange(13, 14 + 1)
-        else:
-            print('Error: SSMU end area not specified for transit')
-            sys.exit()
-        return
-
-
-
-
-#
-# def lagrangian_analysis(comp_node, list_dir, sub_idx):
-#     # Arguments:
-#     # list_dir: target directories for saving intermediate output files
-#     # sub_idx: Dictionary with n keys each containing p x 1 boolean vectors with True for subset of individuals
-#     # NOTE: Modify function to save keys in separate folders;
-#     # Also use subsets for all analysis at once to increase efficiency
-#     key_list = list(sub_idx.keys())
-#     print('Key list for analysis: ')
-#     print(key_list)
-#     for sub_key in key_list:
-#         idv = (sub_idx[sub_key])  # Boolean vector for subset of individuals
-#         list_dir = sub_folder(comp_node, list_dir, sub_key)  # Creates sub_folder for subset of individuals
-#
-#         # Dominant pathways algorithm for subset of individuals (Van Sebille paper)
-#         list_dir['dom_file'] = list_dir[sub_key + '_folder'] + 'dominant_paths.npy'
-#         if not os.path.exists(list_dir['dom_file']):
-#             dominant_paths(idv, list_dir)
-#         else:
-#             print('Directory: ' + list_dir['dom_file'] + ' already exists, skipping')
-#
-#         # Transit time distribution (Van Sebille mainly): os.path.exists() exception handled inside function
-#         #transit_times(idv, list_dir, sub_key)
-#
-#         # Retention:
-#         list_dir['ret_file'] = list_dir[sub_key + '_folder'] + 'retention.npy'
-#         if not os.path.exists(list_dir['ret_file']):
-#             retention_times(idv, list_dir, sub_key)
-#         else:
-#             print('Directory: ' + list_dir['ret_file'] + ' already exists, skipping')
-#
-#         #depth_times(idv, list_dir)
-#
-#
-#         # Finite-size Lyapunov exponent (FSLE)-
-#         # (Bettencourt mainly: https://www.nature.com/articles/ngeo2570 & check email)
-#         # Connectivity estimates;
-#     return list_dir
-#
-#
-
-#
-#
-#
-
-#     breakpoint()
-#
-#     #plt.gca().invert_yaxis()
-#     #print('Saving: ' + list_dir['dom_file'])
-#     plt.close()
-#     nc_file.close()
-#     return
-#
-
-#
-#
 
 
 

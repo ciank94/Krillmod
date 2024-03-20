@@ -7,15 +7,15 @@ from analyse_trajectory import Analyse
 from plot_trajectory import (plot_connectivity, plot_retention, plot_transit, plot_dom_paths,
                              plot_depth_profile, animate_transit, animate_dom_paths)
 
-yrs = ['2017']
-for y in yrs:
+name = ['samp_part.nc']
+for n in name:
     # Define names of main folders
-    trj_folder = 'A:/Cian_sinmod/meeso_sim/sim_'  # trajectory folder
-    sim_folder = y  # Name of simulation instance
-    shp_name = 'ssmusPolygon.shp'  # Name of shape polygon if relevant
+    trj_folder = 'B:/'  # trajectory folder
+    sim_name = n # Name of simulation instance
+    tr_file = trj_folder + sim_name
 
     # Setup directory information for analysis
-    f = Folder(trj_folder, sim_folder, shp_name)  # Initialize folders
+    f = Folder(tr_file)  # Initialize folders
     f.set_folder('local')  # Sets folders based on remote or local node
     f.exist()  # Checks existence of relevant folders and files
 
@@ -28,13 +28,13 @@ for y in yrs:
     df.dom_paths(k_r)
     df.depth_profile(k_t) #Note
     df.retention_times(k_r)
-    df.transit_times('ALL', k_r)
-
+    # df.transit_times('ALL', k_r)
+    #
     plot_depth_profile(f)
     # plot_connectivity(f, k_r)
     # plot_transit(f)
-    # plot_dom_paths(f, k_r)
-    # plot_retention(f)
+    plot_dom_paths(f, k_r)
+    plot_retention(f)
 
 
 #store_regions(f)

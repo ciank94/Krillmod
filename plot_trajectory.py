@@ -12,12 +12,13 @@ import os
 from matplotlib.animation import PillowWriter
 import matplotlib.cm as cm
 import matplotlib.animation as animation
+import random
 
 #class Plotting:
 
 def plot_depth_profile(f):
-    filepath = f.save + f.sim + '/depth_profile.npy'
-    savepath = f.save + f.sim + '/depth_profile.png'
+    filepath = f.save + 'depth_profile.npy'
+    savepath = f.save + 'depth_profile.png'
     z = np.load(filepath)
     fig, ax = plt.subplots()
     f1 = ax.contourf(z)
@@ -139,8 +140,8 @@ def plot_transit(f):
 
 
 def plot_retention(f):
-    filepath = f.save + f.sim + '/retention.npy'
-    save_path = f.save + f.sim + '/retention.png'
+    filepath = f.save + 'retention.npy'
+    save_path = f.save + 'retention.png'
     if not os.path.exists(filepath):
         print('Error: Directory ' + filepath + ' with intermediate matrix does not exist, exiting')
         sys.exit()
@@ -151,15 +152,23 @@ def plot_retention(f):
         clist = df[:, 2]
         depth = np.load(f.depth_file)
         grid_lims = dict()
-        grid_lims['idlimx'] = [np.nanmax([np.nanmin(xlist) - 20, 0]),
-                                np.nanmin([np.nanmax(xlist) + 20, np.shape(depth)[1]])]
-        grid_lims['idlimy'] = [np.nanmax([np.nanmin(ylist) - 20, 0]),
-                                   np.nanmin([np.nanmax(ylist) + 20, np.shape(depth)[0]])]
-        fig, ax = plot_background(f,grid_lims)
-        ax.scatter(xlist, ylist, s=10, facecolor='none', edgecolors='gray', alpha = 0.3, linewidth=0.2)
-        lim = 0.25*np.nanmean(clist)
-        p2 = ax.scatter(xlist[clist>lim], ylist[clist>lim], s=10, c=clist[clist>lim], cmap='YlOrBr', edgecolors='gray', vmin=np.nanmin(clist),
-                            vmax=np.nanmean(clist)*1.75, linewidth=0.2)
+        grid_lims['idlimx'] = [np.nanmax([np.nanmin(xlist) - 10, 0]),
+                                np.nanmin([np.nanmax(xlist) + 10, np.shape(depth)[1]])]
+        grid_lims['idlimy'] = [np.nanmax([np.nanmin(ylist) - 10, 0]),
+                                   np.nanmin([np.nanmax(ylist) + 10, np.shape(depth)[0]])]
+        fig, ax = plot_background(f, grid_lims)
+
+        #lim = 0.01*np.nanmean(clist)
+        lim=0
+        rand_dist = np.zeros(np.shape(df)[0])
+        for i in range(0, np.shape(df)[0]):
+            rand_dist[i] = random.random()
+
+
+        #ax.scatter(xlist + rand_dist, ylist + rand_dist, s=10, facecolor='none', edgecolors='gray', alpha=0.3,
+          #             linewidth=0.2)
+        p2 = ax.scatter(xlist + rand_dist, ylist + rand_dist, s=15, c=clist, cmap='YlOrBr', edgecolors='gray', vmin=np.nanmin(clist),
+                            vmax=np.nanmean(clist)*1, linewidth=0.2)
         fig.colorbar(p2, label='hours')
         # plt.legend(loc='upper center', bbox_to_anchor=(1.23, 1), ncol=1, fancybox=True, shadow=True, title='s2')
         plt.savefig(save_path, dpi=400)
@@ -275,23 +284,27 @@ def animate_dom_paths(list_dir, sub_idx):
 
 def plot_dom_paths(f, k):
     depth = k.depth
-    dom_file = f.save + f.sim + '/dominant_paths.npy'
+    dom_file = f.save + '/dominant_paths.npy'
     df = np.load(dom_file)
     df[np.isnan(depth)] = np.nan
     list_ids = np.where([df > 0])
 
     grid_lims = dict()
-    grid_lims['idlimx'] = [np.nanmax([np.nanmin(list_ids[2]) - 50, 0]),
-                               np.nanmin([np.nanmax(list_ids[2]) + 20, np.shape(depth)[1]])]
-    grid_lims['idlimy'] = [np.nanmax([np.nanmin(list_ids[1]) - 100, 0]),
-                               np.nanmin([np.nanmax(list_ids[1]) + 50, np.shape(depth)[0]])]
+    #grid_lims['idlimx'] = [np.nanmax([np.nanmin(list_ids[2]) - 20, 0]),
+                      #         np.nanmin([np.nanmax(list_ids[2]) + 20, np.shape(depth)[1]])]
+   # grid_lims['idlimy'] = [np.nanmax([np.nanmin(list_ids[1]) - 20, 0]),
+                          #     np.nanmin([np.nanmax(list_ids[1]) + 20, np.shape(depth)[0]])]
+
+    grid_lims['idlimx'] = [150, 260]
+    grid_lims['idlimy'] = [50, 180]
+
     fig, ax = plot_background(f, grid_lims)
     #breakpoint()
     # NOTE: Do a check for the existence of file
     # Modify for the limits of the plot- hard coding elsewhere- create a dictionary with options for plotting
     # tot_file = sv_dir + tr_folder + '/' + area_name + '_total_visits.npy'
 
-    cmax = 0.3
+    cmax = 0.5
     crange = 0.02
 
     #Dominant pathways
@@ -305,7 +318,7 @@ def plot_dom_paths(f, k):
     cbar.ax.tick_params(labelsize=9,rotation=0)
     ax.tick_params(axis='x', labelsize=12)
     ax.tick_params(axis='y', labelsize=12)
-    file = f.save + f.sim + '/dominant_fig.png'
+    file = f.save + 'dominant_fig.png'
     plt.savefig(file, dpi=400)
     plt.close(fig)
     return
@@ -314,7 +327,7 @@ def plot_dom_paths(f, k):
 
 
 def plot_background(f, grid_lims):
-    depth_file = f.save + f.sim + '/depth.npy'
+    depth_file = f.save + 'depth.npy'
     depth = np.load(depth_file)
     depth[np.isnan(depth)] = -35000
     fig, ax = plt.subplots()
@@ -325,7 +338,7 @@ def plot_background(f, grid_lims):
     # add latlong:
     idxlimx = grid_lims['idlimx']
     idxlimy = grid_lims['idlimy']
-    add_latlon(idxlimx, idxlimy)
+    #add_latlon(idxlimx, idxlimy)
     plt.ylim([idxlimy[0], idxlimy[1]])
     plt.xlim([idxlimx[0], idxlimx[1]])
     plt.grid(alpha=0.45)
