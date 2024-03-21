@@ -24,9 +24,11 @@ class Analyse:
         if not os.path.exists(self.dom_file):
             df = np.zeros(np.shape(k.depth))
             df[np.isnan(k.depth)] = np.nan
+            x = k.x[:]
+            y = k.y[:]
             for p_id in range(0, k.p_max):
-                yi = k.y[p_id, :]
-                xi = k.x[p_id, :]
+                yi = y[p_id, :]
+                xi = x[p_id, :]
                 df[yi, xi] = df[yi, xi] + 1
             df[df > 0] = ((df[df > 0]) / k.p_max) * 100
 
@@ -51,7 +53,6 @@ class Analyse:
         else:
             print('Directory: ' + self.depth_file + ' already exists, skipping')
         return
-
 
     def transit_times(self, key, k):
         self.ssmu_target(key)
@@ -100,8 +101,6 @@ class Analyse:
                 yt = y[i, act_id:np.shape(y)[1]].astype(float)
                 y_dist = (yt - yt[0])**2
                 x_dist = (xt - xt[0])**2
-                #y_dist[y_dist <= 0] = 0.0001
-                #x_dist[x_dist <= 0] = 0.0001
                 dist_t = np.sqrt(x_dist + y_dist)
                 cond = np.where(dist_t > d_lim)
                 if np.shape(cond)[0]*np.shape(cond)[1] > 0:
@@ -143,65 +142,6 @@ class Analyse:
             sys.exit()
         return
 
-
-
-
-#
-# def lagrangian_analysis(comp_node, list_dir, sub_idx):
-#     # Arguments:
-#     # list_dir: target directories for saving intermediate output files
-#     # sub_idx: Dictionary with n keys each containing p x 1 boolean vectors with True for subset of individuals
-#     # NOTE: Modify function to save keys in separate folders;
-#     # Also use subsets for all analysis at once to increase efficiency
-#     key_list = list(sub_idx.keys())
-#     print('Key list for analysis: ')
-#     print(key_list)
-#     for sub_key in key_list:
-#         idv = (sub_idx[sub_key])  # Boolean vector for subset of individuals
-#         list_dir = sub_folder(comp_node, list_dir, sub_key)  # Creates sub_folder for subset of individuals
-#
-#         # Dominant pathways algorithm for subset of individuals (Van Sebille paper)
-#         list_dir['dom_file'] = list_dir[sub_key + '_folder'] + 'dominant_paths.npy'
-#         if not os.path.exists(list_dir['dom_file']):
-#             dominant_paths(idv, list_dir)
-#         else:
-#             print('Directory: ' + list_dir['dom_file'] + ' already exists, skipping')
-#
-#         # Transit time distribution (Van Sebille mainly): os.path.exists() exception handled inside function
-#         #transit_times(idv, list_dir, sub_key)
-#
-#         # Retention:
-#         list_dir['ret_file'] = list_dir[sub_key + '_folder'] + 'retention.npy'
-#         if not os.path.exists(list_dir['ret_file']):
-#             retention_times(idv, list_dir, sub_key)
-#         else:
-#             print('Directory: ' + list_dir['ret_file'] + ' already exists, skipping')
-#
-#         #depth_times(idv, list_dir)
-#
-#
-#         # Finite-size Lyapunov exponent (FSLE)-
-#         # (Bettencourt mainly: https://www.nature.com/articles/ngeo2570 & check email)
-#         # Connectivity estimates;
-#     return list_dir
-#
-#
-
-#
-#
-#
-
-#     breakpoint()
-#
-#     #plt.gca().invert_yaxis()
-#     #print('Saving: ' + list_dir['dom_file'])
-#     plt.close()
-#     nc_file.close()
-#     return
-#
-
-#
-#
 
 
 
