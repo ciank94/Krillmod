@@ -1,18 +1,52 @@
 # master file for krill model analysis
-from set_directory import Folder
+import matplotlib.pyplot as plt
+
+from set_directory import Folder, FolderComp
 from get_trajectory import Trajectory, Regional
-from analyse_trajectory import Analyse
+from analyse_trajectory import Analyse, AnalyseComp
 #from get_trajectory import store_regions
 #from analyse_trajectory import lagrangian_analysis, ssmu_start, sim_account
-from plot_trajectory import (plot_connectivity, plot_retention, plot_transit, plot_dom_paths,
+from plot_trajectory import (Plots, plot_connectivity, plot_retention, plot_transit, plot_dom_paths,
                              plot_depth_profile, animate_transit, animate_dom_paths)
 
-yrs = ['2017']
-for y in yrs:
+#todo: put different comparisons in their own module- get_sim_analysis, compare_sim, and so on- which take folders and
+#todo: files as input and do basic analysis; also put network drives in a list for easier extraction e.g. ssmu_shape,
+#todo: betzy folder etc.
+
+# Comparisons between simulations- use another comparison class:
+sim_folder1 = 'DVM'  # Simulation identifier
+sim_folder2 = '2017'  # Second simulation identifier
+#trj_folder = 'A:/Cian_sinmod/meeso_sim/sim_'  # trajectory folder
+t_folder1 = 'D:/Cian_sinmod/sim_'  # trajectory folder- betzy
+t_folder2 = 'A:/Cian_sinmod/sim_'  # trajectory folder- saga
+
+# set data source 1
+# set data source 2
+# retrieve relevant data for dimensions to be compared
+# calculated RMSE
+# plot RMSE for each data point with plotting class (can do this later)
+
+f = FolderComp(t_folder1, sim_folder1, t_folder2, sim_folder2)
+f.set_folder('local')
+f.exist()
+
+df = AnalyseComp(f)
+df.compare_pathways()
+df.compare_retention()
+
+p = Plots()
+#p.plot_back(f)
+p.plot_comp_paths(files=f)
+p.plot_comp_retention(files=f)
+breakpoint()
+
+sim = ['DVM']  # Simulation identifier
+#trj_folder = 'A:/Cian_sinmod/meeso_sim/sim_'  # trajectory folder
+trj_folder = 'D:/Cian_sinmod/sim_'  # trajectory folder- betzy
+shp_name = 'ssmusPolygon.shp'  # Name of shape polygon if relevant
+for s in sim:
     # Define names of main folders
-    trj_folder = 'A:/Cian_sinmod/meeso_sim/sim_'  # trajectory folder
-    sim_folder = y  # Name of simulation instance
-    shp_name = 'ssmusPolygon.shp'  # Name of shape polygon if relevant
+    sim_folder = s  # Name of simulation instance
 
     # Setup directory information for analysis
     f = Folder(trj_folder, sim_folder, shp_name)  # Initialize folders
@@ -26,32 +60,15 @@ for y in yrs:
     # Now the analysis
     df = Analyse(f)
     df.dom_paths(k_r)
-    df.depth_profile(k_t) #Note
+    df.depth_profile(k_t)  # Note
     df.retention_times(k_r)
     df.transit_times('ALL', k_r)
 
     plot_depth_profile(f)
-    # plot_connectivity(f, k_r)
-    # plot_transit(f)
-    # plot_dom_paths(f, k_r)
-    # plot_retention(f)
-
-
-#store_regions(f)
-
-#
-# # Analyse trajectories:
-# sub_idx = ssmu_start(list_dir['reg_file'])
-# list_dir = lagrangian_analysis(comp_node, list_dir, sub_idx)
-
-# plot trajectories
-#plot_connectivity(f, k_r)
-#plot_transit(f)
-#plot_dom_paths(f, k_r)
-#plot_retention(list_dir, sub_idx)
-
-#animate_transit(list_dir, sub_idx)
-#animate_dom_paths(list_dir, sub_idx)
+    plot_connectivity(f, k_r)
+    plot_transit(f)
+    plot_dom_paths(f, k_r)
+    plot_retention(f)
 
 
 

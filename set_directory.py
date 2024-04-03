@@ -171,4 +171,57 @@ def in_poly(x, y, poly1):
     return p_id
 
 
+class FolderComp:
+
+    def __init__(self, t_folder1, sim_folder1, t_folder2, sim_folder2):
+
+        self.comp_node = None
+        self.depth_file = None
+        self.time_file = None
+        self.save = None
+        self.comp_folder = None
+        self.traj = t_folder1
+        self.sim = sim_folder1
+        self.traj2 = t_folder2
+        self.sim2 = sim_folder2
+
+
+    def set_folder(self, comp_node):
+        # Sets folder and file names based on whether the files are stored locally or on a remote server, where
+        # comp node can be a number of switches
+        nodes = ['local', 'saga']
+        if comp_node not in nodes:
+            print('Expected one of the following nodes for comp_node:  ')
+            [print(i) for i in nodes]
+            sys.exit()
+        if comp_node == 'local':
+            self.comp_node = 'local'
+            self.save = 'C:/Users/ciank/PycharmProjects/sinmod/Krillmod/results/'
+        elif comp_node == 'saga':
+            self.comp_node = 'saga'
+            self.save = '/cluster/projects/nn9828k/Cian_sinmod/python/Krillmod/results/'
+        else:
+            print('Error: computation node not specified')
+            sys.exit()
+
+        # Define files based on folder setup
+        # 2) Intermediate save files
+        self.time_file = self.save + self.sim + '/times.npy'
+        self.depth_file = self.save + self.sim + '/depth.npy'
+        return
+
+    def exist(self):
+        self.comp_folder = self.save + self.sim + '-' + self.sim2 + '/'
+        if not os.path.exists(self.comp_folder):
+            os.mkdir(self.comp_folder)
+        else:
+            print(self.comp_folder + ' exists')
+
+        print('### NOTE:')
+        print('All intermediate files exist for analysis')
+        print('###')
+        print('')
+        return
+
+
 

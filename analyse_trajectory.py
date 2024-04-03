@@ -143,6 +143,48 @@ class Analyse:
         return
 
 
+class AnalyseComp:
+    def __init__(self, f):
+
+        # Intermediate files:
+        self.transit_file1 = f.save + f.sim + '/'
+        self.dom_file1 = f.save + f.sim + '/dominant_paths.npy'  # save dominant paths
+        self.depth_file1 = f.save + f.sim + '/depth_profile.npy'  # save dominant paths
+        self.retention_file1 = f.save + f.sim + '/retention.npy'  # save dominant paths
+
+        self.transit_file2 = f.save + f.sim2 + '/'
+        self.dom_file2 = f.save + f.sim2 + '/dominant_paths.npy'  # save dominant paths
+        self.depth_file2 = f.save + f.sim2 + '/depth_profile.npy'  # save dominant paths
+        self.retention_file2 = f.save + f.sim2 + '/retention.npy'  # save dominant paths
+
+        self.compare_path_file = f.comp_folder + 'comp_paths.npy'
+        self.compare_retention_file = f.comp_folder + 'comp_retention.npy'
+        return
+
+    def compare_pathways(self):
+        if not os.path.exists(self.compare_path_file):
+            df1 = np.load(self.dom_file1)
+            df2 = np.load(self.dom_file2)
+            err = (df1-df2)
+            np.save(self.compare_path_file, err)
+        else:
+            print('Directory: ' + self.compare_path_file + ' already exists, skipping')
+        return
+
+    def compare_retention(self):
+        if not os.path.exists(self.compare_retention_file):
+            df1 = np.load(self.retention_file1)
+            df2 = np.load(self.retention_file2)
+            idx1 = np.shape(df1)[0]
+            idx2 = np.shape(df2)[0]
+            err = (df1[0:(np.min([idx1, idx2])), 2] - df2[0:(np.min([idx1, idx2])), 2])
+            ret_err = [df1[0:(np.min([idx1, idx2])), 0], df1[0:(np.min([idx1, idx2])), 1], err]
+            np.save(self.compare_retention_file, ret_err)
+        else:
+            print('Directory: ' + self.compare_retention_file + ' already exists, skipping')
+        return
+
+
 
 
 
