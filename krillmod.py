@@ -1,26 +1,31 @@
 # master file for krill model analysis
-from import_settings import locate_folders
-from analyse_trajectory import lagrangian_analysis, ssmu_start, sim_account
-from plot_trajectory import plot_transit, plot_dom_paths, animate_transit, animate_dom_paths
+from sim_scenarios import main_analysis, compare_2_years, get_quant  # simulation scenarios
 
-# # Define directories
-shape_name = 'ssmusPolygon.shp'
-#shape_name = 'mpasPolygon.shp'
-sim_folder = '2016'
-comp_node = 'local'
-list_dir = locate_folders(comp_node, sim_folder, shape_name)
 
-# Simulation summary:
-sim_account(list_dir)
+# sim_list = ['2017', '2018']  # Simulation identifier
+# trj_folder = 'D:/Cian_sinmod/meeso_sim/sim_'  # trajectory folder
+sim_list = ['DVM']
+trj_folder = 'D:/Cian_sinmod/sim_'  # trajectory folder- betzy
+shp_name = 'ssmusPolygon.shp'  # Name of shape polygon if relevant
+get_quant(sim_list, trj_folder, shp_name, node='local')
 
-# Analyse trajectories:
-sub_idx = ssmu_start(list_dir['reg_file'])
-list_dir = lagrangian_analysis(comp_node, list_dir, sub_idx)
 
-# plot trajectories
-#plot_transit(list_dir, sub_idx)
-#plot_dom_paths(list_dir, sub_idx)
+breakpoint()
 
-animate_transit(list_dir, sub_idx)
-#animate_dom_paths(list_dir, sub_idx)
+# 1: Main analysis for a list of simulations;
+sim_list = ['2018']  # Simulation identifier
+trj_folder = 'A:/Cian_sinmod/meeso_sim/sim_'  # trajectory folder
+#trj_folder = 'D:/Cian_sinmod/sim_'  # trajectory folder- betzy
+shp_name = 'ssmusPolygon.shp'  # Name of shape polygon if relevant
+main_analysis(sim_list, trj_folder, shp_name, node='local')
+
+breakpoint()
+
+# 2: Comparisons between 2 simulations
+sim_folder1 = 'DVM'  # Simulation identifier
+sim_folder2 = '2017'  # Second simulation identifier
+t_folder1 = 'D:/Cian_sinmod/sim_'  # trajectory folder- betzy
+t_folder2 = 'A:/Cian_sinmod/sim_'  # trajectory folder- saga
+compare_2_years(t_folder1, sim_folder1, t_folder2, sim_folder2, node='local')
+
 

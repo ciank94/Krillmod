@@ -1,42 +1,258 @@
-#import cartopy.crs as ccrs
-#import cartopy.feature as cfeature
+# import cartopy.crs as ccrs
+# import cartopy.feature as cfeature
 import sys
 import netCDF4 as nc
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from mpl_toolkits.basemap import Basemap
 import os
-from analyse_trajectory import ssmu_target
+# from analyse_trajectory import ssmu_target
 from matplotlib.animation import PillowWriter
+import matplotlib.cm as cm
 import matplotlib.animation as animation
 
 
-#from Krillmod.get_trajectory import geo2grid, store_traj
-#from Krillmod.import_settings import tr_file
-#from io import BytesIO
+class Plots:
 
-def plot_transit(list_dir, sub_idx):
-    # Arguments:
-    # Pointer to subset of individuals (sub_key)
-    # Use that pointer to identify folder
-    # Use target function to identify target area (ssmu_target in this case)- loop over target areas (subs dictionary)
-    key_list = list(sub_idx.keys())
-    print('Key list for analysis: ')
-    print(key_list)
-    for sub_key in key_list:
-        subs = ssmu_target(sub_key)  # Target regions stored in dictionary (there may be multiple target areas);
-        for target_area in subs:
-            filepath = list_dir[sub_key + '_folder'] + target_area + '_' + 'transit.npy'
-            save_path = list_dir[sub_key + '_folder'] + target_area + '_' + 'transit.png'
-            save_path2 = list_dir[sub_key + '_folder'] + target_area + '_' + 'transit_map.png'
+    def __init__(self):
+        # Land plot parameters
+        self.land = None
+        self.land_par = [-40000, -20000]
+        self.depth_contours = np.linspace(0, 1500, 4)
+        self.depth_colors = np.arange(0, 4500, 200)
+        # todo: make different standard areas for plotting;
+        self.xlim_standard = [50, 750]
+        self.ylim_standard = [50, 750]
+
+        # Define colormaps
+        self.land_cmap = plt.get_cmap('gray')
+        self.error_cmap = plt.get_cmap('bwr')
+        self.depth_cmap = plt.get_cmap('Blues')  # Alternative = cmocean.cm.deep
+
+    def plot_dom_paths(self, files, k):
+        save_name = 'dominant_fig'
+        depth = k.depth
+        dom_file = files.save + files.sim + '/dominant_paths.npy'
+        df = np.load(dom_file)
+        df[np.isnan(depth)] = np.nan
+        fig, ax = plt.subplots()
+        self.plot_background(files, ax)
+        cmax = 0.3
+        crange = 0.02
+
+        # Dominant pathways
+        cmap1 = plt.get_cmap('OrRd')  # Oranges, Reds- sequential coolwarm= divergent, jet, seismic
+        data_plot = ax.contourf(df, levels=np.arange(0, cmax, crange), extend='both', cmap=cmap1)
+        self.plot_standard_lims()
+        divider = make_axes_locatable(ax)
+        ax_cb = divider.new_horizontal(size="3%", pad=0.05, axes_class=plt.Axes)
+        fig.add_axes(ax_cb)
+        cbar = plt.colorbar(data_plot, cax=ax_cb)
+        cbar.ax.set_ylabel('Probability (%)', loc='center', size=12.5, weight='bold')
+        cbar.ax.tick_params(labelsize=9, rotation=0)
+        ax.tick_params(axis='x', labelsize=12)
+        ax.tick_params(axis='y', labelsize=12)
+        save_plot(files, save_name)
+        return
+
+    def plot_back(self, files):
+        save_name = 'back'
+        fig, ax = plt.subplots()
+        self.plot_background(files, ax)
+        ax.tick_params(axis='x', labelsize=12)
+        ax.tick_params(axis='y', labelsize=12)
+        save_plot(files, save_name)
+        return
+
+    def plot_comp_paths(self, files):
+        save_name = 'comp_paths'
+        fig, ax = plt.subplots()
+        self.plot_background(files, ax)
+        data = np.load(files.comp_folder + 'comp_paths.npy')
+        range_v = np.arange(-0.08, 0.081, 0.002)
+        range_v = np.round(range_v, 3)
+        comp_plot = ax.contourf(data, levels=range_v, cmap=self.error_cmap)
+        self.plot_standard_lims()
+        add_cbar(comp_plot, fig, ax, axis_title='%')
+        save_comp_plot(files, save_name)
+        return
+
+    def plot_comp_retention(self, files):
+        save_name = 'comp_retention'
+        fig, ax = plt.subplots()
+        self.plot_background(files, ax)
+        data = np.load(files.comp_folder + 'comp_retention.npy')
+        x_sites = data[0, :]
+        y_sites = data[1, :]
+        c_list = data[2, :]
+        ax.scatter(x_sites, y_sites, s=10, facecolor='none', edgecolors='gray', alpha=0.3, linewidth=0.2)
+        comp_plot = ax.scatter(x_sites, y_sites, s=10, c=c_list, cmap=self.error_cmap,
+                               edgecolors='gray', vmin=np.nanmean(c_list[c_list < 0]) * 2.4,
+                               vmax=np.nanmean(c_list[c_list > 0]) * 2.4, linewidth=0.2)
+        self.plot_site_lims(files, x_sites, y_sites)
+        add_cbar(comp_plot, fig, ax, axis_title='hours')
+        save_comp_plot(files, save_name)
+        return
+
+    def plot_background(self, files, ax):
+        # Assumes figure is already created
+        self.get_land(files)
+        ax.contourf(self.land, self.land_par, cmap=self.land_cmap)
+        ax.contour(self.land, self.depth_contours, colors='k', alpha=0.15)
+        return
+
+    def get_land(self, files):
+        depth_file = files.save + files.sim + '/depth.npy'
+        depth = np.load(depth_file)
+        self.land = np.array(depth[:])
+        self.land[np.isnan(self.land)] = -35000
+        return
+
+    def plot_site_lims(self, files, x_sites, y_sites):
+        depth_file = files.save + files.sim + '/depth.npy'
+        depth = np.load(depth_file)
+        self.xlim_standard = [np.nanmax([np.nanmin(x_sites) - 20, 0]),
+                              np.nanmin([np.nanmax(x_sites) + 20, np.shape(depth)[1]])]
+        self.ylim_standard = [np.nanmax([np.nanmin(y_sites) - 20, 0]),
+                              np.nanmin([np.nanmax(y_sites) + 20, np.shape(depth)[0]])]
+        add_latlon(self.xlim_standard, self.ylim_standard)
+        plt.ylim(self.ylim_standard[0], self.ylim_standard[1])
+        plt.xlim(self.xlim_standard[0], self.xlim_standard[1])
+        plt.grid(alpha=0.45)
+        return
+
+    def plot_standard_lims(self):
+        add_latlon(self.xlim_standard, self.ylim_standard)
+        plt.ylim(self.ylim_standard[0], self.ylim_standard[1])
+        plt.xlim(self.xlim_standard[0], self.xlim_standard[1])
+        plt.grid(alpha=0.45)
+        return
+
+    def plot_depth(self, files, data):
+        save_name = 'depth'
+        fig, ax = plt.subplots()
+        depth_1 = data.depth[:]
+        depth_plot = ax.contourf(depth_1, levels=self.depth_colors, extend='both', cmap=self.depth_cmap, alpha=1)
+        self.plot_background(files, ax)
+        cbar_title = 'Depth ' + '(m)'
+        add_cbar(depth_plot, fig, ax, cbar_title)
+        ax.tick_params(axis='x', labelsize=12)
+        ax.tick_params(axis='y', labelsize=12)
+        save_plot(files, save_name)
+        return
+
+    def plot_connectivity(self, files, k_r):
+        key_list = ['SO', 'SG']
+        for target_area in key_list:
+            filepath = files.save + files.sim + '/' + target_area + '_transit.npy'
+            save_name = target_area + '_' + 'connect'
             if not os.path.exists(filepath):
                 print('Error: Directory ' + filepath + ' with intermediate matrix does not exist, exiting')
                 sys.exit()
             else:
                 df = np.load(filepath)
-                # if sub_key == 'SO' and target_area == 'SG':
-                #     breakpoint()
+                x = df[:, 0]
+                y = df[:, 1]
+                x1 = x[x > 0]
+                y1 = y[y > 0]
+                df2 = np.array([x1, y1]).T
+                df3 = np.unique(df2, axis=0)
+                xlist = df3[:, 0]
+                ylist = df3[:, 1]
+                tot_part = np.zeros(np.shape(df3)[0])
+                if np.shape(tot_part)[0] == 0:
+                    print('No arrivals for connectivitiy plot, skipping')
+                else:
+                    x = k_r.x[:, 0]
+                    y = k_r.y[:, 0]
+                    dfn = np.array([x, y]).T
+                    dfn2 = np.unique(dfn, axis=0)
+                    x_sites = dfn2[:, 0]
+                    y_sites = dfn2[:, 1]
+                    x_sites = x_sites[x_sites > 0]
+                    y_sites = y_sites[y_sites > 0]
+                    for i in range(0, np.shape(df3)[0]):
+                        xv = xlist[i]
+                        yv = ylist[i]
+                        b1 = np.isin(x1, xv)
+                        b2 = np.isin(y1, yv)
+                        sumb = b1 * b2
+                        tot_part[i] = np.sum(sumb)
+                    fig, ax = plt.subplots()
+                    self.plot_background(files, ax)
+                    ax.scatter(x_sites, y_sites, s=10, c='w', edgecolors='gray', alpha=0.3, linewidth=0.2)
+                    p2 = ax.scatter(xlist, ylist, s=10, c=tot_part, cmap='jet', edgecolors='gray', linewidth=0.2,
+                                    vmin=np.nanmin(tot_part), vmax=np.nanmax(tot_part))
+                    fig.colorbar(p2, label='Number of particles')
+                    self.plot_site_lims(files, x_sites, y_sites)
+                    save_plot(files, save_name)
+        return
+
+    def plot_retention(self, files):
+        filepath = files.save + files.sim + '/retention.npy'
+        save_name = 'retention'
+        if not os.path.exists(filepath):
+            print('Error: Directory ' + filepath + ' with intermediate matrix does not exist, exiting')
+            sys.exit()
+        else:
+            df = np.load(filepath)
+            x_sites = df[:, 0]
+            y_sites = df[:, 1]
+            clist = df[:, 2]
+            fig, ax = plt.subplots()
+            self.plot_background(files, ax)
+            ax.scatter(x_sites, y_sites, s=10, facecolor='none', edgecolors='gray', alpha=0.3, linewidth=0.2)
+            lim = 0.25 * np.nanmean(clist)
+            p2 = ax.scatter(x_sites[clist > lim], y_sites[clist > lim], s=10, c=clist[clist > lim], cmap='YlOrBr',
+                            edgecolors='gray', vmin=np.nanmin(clist),
+                            vmax=np.nanmean(clist) * 1.75, linewidth=0.2)
+            fig.colorbar(p2, label='hours')
+            self.plot_site_lims(files, x_sites, y_sites)
+            save_plot(files, save_name)
+        return
+
+
+    def save_data(self, files):
+        key_list = ['SO', 'SG']
+        save_name = files.save + files.sim + '/transit_quant.txt'
+        f = open(save_name, 'w')
+        for target_area in key_list:
+            filepath = files.save + files.sim + '/' + target_area + '_transit.npy'
+
+            if not os.path.exists(filepath):
+                print('Error: Directory ' + filepath + ' with intermediate matrix does not exist, exiting')
+                sys.exit()
+            else:
+                df = np.load(filepath)
+                t = df[:, 2]
+                number_of_arrivals = np.sum(t > 0)
+                avg_transit_days = np.nanmean(t[t > 0])/24
+                std_transit_days = np.nanstd(t[t > 0])/24
+                f.writelines(target_area + ' number of arrivals:' + str(number_of_arrivals) + '\n')
+                f.writelines(target_area + ' avg transit in days:' + str(avg_transit_days) + '\n')
+                f.writelines(target_area + ' std transit in days:' + str(std_transit_days) + '\n')
+
+        f.close()
+        return
+
+
+
+    def plot_transit(self, files):
+        # Arguments:
+        # Pointer to subset of individuals (sub_key)
+        # Use that pointer to identify folder
+        # Use target function to identify target area (ssmu_target in this case)- loop over target areas (subs dictionary)
+        key_list = ['SO', 'SG']
+        for target_area in key_list:
+            filepath = files.save + files.sim + '/' + target_area + '_transit.npy'
+            save_name = target_area + '_' + 'transit'
+            if not os.path.exists(filepath):
+                print('Error: Directory ' + filepath + ' with intermediate matrix does not exist, exiting')
+                sys.exit()
+            else:
+                df = np.load(filepath)
                 x = df[:, 0]
                 y = df[:, 1]
                 t = df[:, 2]
@@ -44,8 +260,8 @@ def plot_transit(list_dir, sub_idx):
                 x_arrive = x[x > 0.1]
                 y_arrive = y[y > 0.1]
                 t_arrive = t[t > 0.1]
-                t_arrive = t_arrive/24
-                if np.shape(t_arrive)[0]==0:
+                t_arrive = t_arrive / 24
+                if np.shape(t_arrive)[0] == 0:
                     print('No particles arrived, skipping')
                 else:
                     # mean_t = np.floor(np.mean(t_arrive))
@@ -72,61 +288,40 @@ def plot_transit(list_dir, sub_idx):
                     ax2.tick_params(axis='y', labelsize=10)
                     ax1.set_xlabel('Transit days', fontsize=13)
                     plt.grid(alpha=0.45)  # nice and clean grid
-                    plt.savefig(save_path, dpi=400)
-                    plt.close(fig)
-
-                    # worm plots
-                    filepath2 = list_dir[sub_key + '_folder'] + target_area + '_' + 'wormx.npy'
-                    filepath3 = list_dir[sub_key + '_folder'] + target_area + '_' + 'wormy.npy'
-                    wormx = np.load(filepath2)
-                    wormy = np.load(filepath3)
-                    sub_id = np.sum(wormx, axis=1) > 0
-                    x_end = df[:, 3]
-                    y_end = df[:, 4]
-                    #xe = x_end[sub_id]
-                    #ye = y_end[sub_id]
-                    wx = wormx[sub_id, :]
-                    wy = wormy[sub_id, :]
-                    if len(wx) < 1000:
-                        sub = 1
-                    else:
-                        sub = 10
-                    skip = (slice(None, None, sub), slice(None, None, sub))
-                    skip2 = slice(None, None, sub)
-                    wxp = wx #[skip]
-                    wyp = wy #[skip]
-                    #xep = xe #[skip2]
-                    #yep = ye #[skip2]
-                    #breakpoint()
-                    wxp[wxp==0] = np.nan
-                    wyp[wyp == 0] = np.nan
-
-                    #wx[wx==0] = np.nan
-                    #wy[wy == 0] = np.nan
-                    #breakpoint()
-
-                    grid_lims = dict()
-                    depth = np.load(list_dir['depth_file'])
-                    grid_lims['idlimx'] = [np.nanmax([np.nanmin(wxp) - 50,0]), np.nanmin([np.nanmax(wxp) + 20, np.shape(depth)[1]])]
-                    grid_lims['idlimy'] = [np.nanmax([np.nanmin(wyp) - 100,0]), np.nanmin([np.nanmax(wyp) + 50, np.shape(depth)[0]])]
-                    fig, ax = plot_depth(list_dir, grid_lims)
+                    save_plot(files, save_name)
+        return
 
 
-                    for i in range(0, np.shape(wxp)[0]):
-                        ax.plot(wxp[i, :], wyp[i, :], '.r-', markersize = 1.5, linewidth=0.01)
 
-                    ax.plot(x_arrive, y_arrive, '.k', markersize = 3, linestyle='None')#linewidth=0.0001)
-                    #ax.plot(xep, yep, '.w', markersize = 3,linestyle='None')# linewidth=0.0001)
-                    plt.savefig(save_path2, dpi=400)
+
+def plot_depth_profile(f):
+    filepath = f.save + f.sim + '/depth_profile.npy'
+    savepath = f.save + f.sim + '/depth_profile.png'
+    z = np.load(filepath)
+    fig, ax = plt.subplots()
+    f1 = ax.contourf(z)
+
+    ax1 = f1.axes
+    ax1.invert_yaxis()
+    f1.set_cmap('hot')
+    ax.set_xlabel('Time step', fontsize=13)
+    ax.set_ylabel('Depth (m)', fontsize=13)
+    plt.colorbar(f1)
+    plt.savefig(savepath, dpi=400)
+    plt.close(fig)
     return
+
+
+
+
 
 
 def animate_transit(list_dir, sub_idx):
     key_list = list(sub_idx.keys())
-    #for sub_key in key_list:
+    # for sub_key in key_list:
     for sub_key in ['WAP']:
-        #subs = ssmu_target(sub_key)  # Target regions stored in dictionary (there may be multiple target areas);
-        #for target_area in subs:
+        # subs = ssmu_target(sub_key)  # Target regions stored in dictionary (there may be multiple target areas);
+        # for target_area in subs:
         for target_area in ['SO']:
             filepath = list_dir[sub_key + '_folder'] + target_area + '_' + 'transit.npy'
             save_path = list_dir[sub_key + '_folder'] + target_area + '_' + 'transit.gif'
@@ -135,14 +330,10 @@ def animate_transit(list_dir, sub_idx):
                 sys.exit()
             else:
                 df = np.load(filepath)
-                # if sub_key == 'SO' and target_area == 'SG':
-                #     breakpoint()
                 x = df[:, 0]
                 y = df[:, 1]
                 t = df[:, 2]
-        # Calculate the fraction that reach SOI, the mean time, std, etc., plot histogram;
-                x_arrive = x[x > 0.1]
-                y_arrive = y[y > 0.1]
+                # Calculate the fraction that reach SOI, the mean time, std, etc., plot histogram;
                 t_arrive = t[t > 0.1]
                 t_arrive = t_arrive / 24
                 if np.shape(t_arrive)[0] == 0:
@@ -155,36 +346,12 @@ def animate_transit(list_dir, sub_idx):
                     sub_id = np.sum(wormx, axis=1) > 0
                     x_end = df[:, 3]
                     y_end = df[:, 4]
-                    xe = x_end#[sub_id]
-                    ye = y_end#[sub_id]
-                    wx = wormx#[sub_id, :]
-                    wy = wormy#[sub_id, :]
-                    if len(wx) < 1000:
-                        sub = 1
-                    else:
-                        sub = 10
-                    skip = (slice(None, None, sub), slice(None, None, sub))
-                    skip2 = slice(None, None, sub)
-                    wxp = wx  # [skip]
-                    wyp = wy  # [skip]
-                    # xep = xe #[skip2]
-                    # yep = ye #[skip2]
-                    # breakpoint()
+                    wx = wormx  #
+                    wy = wormy
+                    wxp = wx
+                    wyp = wy
                     wxp[wxp == 0] = np.nan
                     wyp[wyp == 0] = np.nan
-                    # wxp = wx[skip]
-                    # wyp = wy[skip]
-                    # # xep = xe[skip2]
-                    # # yep = ye[skip2]
-                    # # breakpoint()
-                    # # wxp = wx
-                    # # wyp = wy
-                    # wxp[wxp == 0] = np.nan
-                    # wyp[wyp == 0] = np.nan
-
-                    # wx[wx==0] = np.nan
-                    # #wy[wy == 0] = np.nan
-                    # breakpoint()
 
                     grid_lims = dict()
                     depth = np.load(list_dir['depth_file'])
@@ -195,15 +362,12 @@ def animate_transit(list_dir, sub_idx):
                     fig, ax = plot_depth(list_dir, grid_lims)
 
                     artists = []
-                    max_steps = np.floor(np.shape(wxp)[1]/5).astype(int)
+                    max_steps = np.floor(np.shape(wxp)[1] / 5).astype(int)
                     for i in range(0, max_steps):
-                        container = ax.plot(wxp[:, i*5], wyp[:, i*5], 'r.', markersize=1.5, linewidth=0.8)
+                        container = ax.plot(wxp[:, i * 5], wyp[:, i * 5], 'r.', markersize=1.5, linewidth=0.8)
                         artists.append(container)
-                        # ax.plot(x_arrive, y_arrive, '.k', markersize = 3, linestyle='None')#linewidth=0.0001)
-                        # ax.plot(xep, yep, '.w', markersize = 3,linestyle='None')# linewidth=0.0001)
 
                     ani = animation.ArtistAnimation(fig=fig, artists=artists, interval=2)
-                    # plt.show()
                     ani.save(filename=save_path, dpi=400, writer=PillowWriter(fps=30))
     return
 
@@ -227,26 +391,26 @@ def animate_dom_paths(list_dir, sub_idx):
     grid_lims['idlimy'] = [np.nanmax([np.nanmin(list_ids[1]) - 100, 0]),
                            np.nanmin([np.nanmax(list_ids[1]) + 50, np.shape(depth)[0]])]
     fig, ax = plot_background(list_dir, grid_lims)
-    x = nc_file['xp'][idv,:]
-    y = nc_file['yp'][idv,:]
+    x = nc_file['xp'][idv, :]
+    y = nc_file['yp'][idv, :]
     inc = 80
     artists = []
-    tot_v = np.floor(np.shape(x)[1]/inc).astype(int)
+    tot_v = np.floor(np.shape(x)[1] / inc).astype(int)
     for k in range(0, tot_v):
         df = np.zeros(np.shape(depth))
         df[np.isnan(depth)] = np.nan
-        #v1 = np.min([k + 10, np.shape(x)[1]])
+        # v1 = np.min([k + 10, np.shape(x)[1]])
         for i in range(0, np.shape(x)[0]):
-            yi = y[i, (k*inc)+1:((k+1)*inc)]
-            xi = x[i, (k*inc)+1:((k+1)*inc)]
+            yi = y[i, (k * inc) + 1:((k + 1) * inc)]
+            xi = x[i, (k * inc) + 1:((k + 1) * inc)]
             df[yi, xi] = df[yi, xi] + 1
-        df[df > 0] = ((df[df > 0]) / np.nanmax(df[df>0])) * 100
+        df[df > 0] = ((df[df > 0]) / np.nanmax(df[df > 0])) * 100
         cs = ax.contourf(df, levels=np.arange(0, cmax, crange), extend='both', cmap=cmap1)
         # divider = make_axes_locatable(ax)
         # ax_cb = divider.new_horizontal(size="3%", pad=0.05, axes_class=plt.Axes)
         # fig.add_axes(ax_cb)
-        #cbar = plt.colorbar(cs, cax=ax_cb)
-        #cbar.ax.set_ylabel('Probability (%)', loc='center', size=12.5, weight='bold')
+        # cbar = plt.colorbar(cs, cax=ax_cb)
+        # cbar.ax.set_ylabel('Probability (%)', loc='center', size=12.5, weight='bold')
         # cbar.ax.tick_params(labelsize=9, rotation=0)
         # ax.tick_params(axis='x', labelsize=12)
         # ax.tick_params(axis='y', labelsize=12)
@@ -258,53 +422,11 @@ def animate_dom_paths(list_dir, sub_idx):
     return
 
 
-def plot_dom_paths(list_dir, sub_idx):
-    depth = np.load(list_dir['depth_file'])
-    key_list = list(sub_idx.keys())
-    for sub_key in key_list:
-        dom_file = list_dir[sub_key + '_folder'] + 'dominant_paths.npy'
-        df = np.load(dom_file)
-        df[np.isnan(depth)] = np.nan
-        list_ids = np.where([df > 0])
-
-        grid_lims = dict()
-        grid_lims['idlimx'] = [np.nanmax([np.nanmin(list_ids[2]) - 50, 0]),
-                               np.nanmin([np.nanmax(list_ids[2]) + 20, np.shape(depth)[1]])]
-        grid_lims['idlimy'] = [np.nanmax([np.nanmin(list_ids[1]) - 100, 0]),
-                               np.nanmin([np.nanmax(list_ids[1]) + 50, np.shape(depth)[0]])]
-        fig, ax = plot_background(list_dir, grid_lims)
-        #breakpoint()
-        # NOTE: Do a check for the existence of file
-        # Modify for the limits of the plot- hard coding elsewhere- create a dictionary with options for plotting
-        # tot_file = sv_dir + tr_folder + '/' + area_name + '_total_visits.npy'
-        if sub_key == 'ALL':
-            cmax = 0.3
-            crange = 0.02
-        else:
-            cmax = 2.5
-            crange = 0.1
-
-        #Dominant pathways
-        cmap1 = plt.get_cmap('OrRd')  # Oranges, Reds- sequential coolwarm= divergent, jet, seismic
-        data_plot = ax.contourf(df, levels=np.arange(0, cmax, crange), extend='both',cmap=cmap1)
-        divider = make_axes_locatable(ax)
-        ax_cb = divider.new_horizontal(size="3%", pad=0.05, axes_class=plt.Axes)
-        fig.add_axes(ax_cb)
-        cbar = plt.colorbar(data_plot, cax=ax_cb)
-        cbar.ax.set_ylabel('Probability (%)', loc='center', size=12.5, weight='bold')
-        cbar.ax.tick_params(labelsize=9,rotation=0)
-        ax.tick_params(axis='x', labelsize=12)
-        ax.tick_params(axis='y', labelsize=12)
-        file = list_dir[sub_key + '_folder'] + 'dominant_fig.png'
-        plt.savefig(file, dpi=400)
-        plt.close(fig)
-    return
 
 
 
-
-def plot_background(list_dir, grid_lims):
-    depth_file = list_dir['save_folder'] + list_dir['sim_folder'] + '/depth.npy'
+def plot_background(f, grid_lims):
+    depth_file = f.save + f.sim + '/depth.npy'
     depth = np.load(depth_file)
     depth[np.isnan(depth)] = -35000
     fig, ax = plt.subplots()
@@ -401,4 +523,30 @@ def add_latlon(idxlimx, idxlimy):
             plt.xticks(a1, tick_labels)
     return
 
+
+def add_cbar(plot, fig, ax, axis_title):
+    # plt.grid(alpha=0.45)
+    divider = make_axes_locatable(ax)
+    ax_cb = divider.new_horizontal(size="3%", pad=0.05, axes_class=plt.Axes)
+    fig.add_axes(ax_cb)
+    cbar = plt.colorbar(plot, cax=ax_cb)
+    cbar.ax.set_ylabel(axis_title, loc='center', size=7, weight='bold')
+    cbar.ax.tick_params(labelsize=7, rotation=0)
+    return
+
+
+def save_plot(files, save_name):
+    savefile = files.save + files.sim + '/' + save_name + '.png'
+    print('Saving file: ' + savefile)
+    plt.savefig(savefile, dpi=400)
+    plt.close()
+    return
+
+
+def save_comp_plot(files, save_name):
+    savefile = files.comp_folder + save_name + '.png'
+    print('Saving file: ' + savefile)
+    plt.savefig(savefile, dpi=400)
+    plt.close()
+    return
 
