@@ -45,6 +45,7 @@ class Plots:
         # Dominant pathways
         cmap1 = plt.get_cmap('OrRd')  # Oranges, Reds- sequential coolwarm= divergent, jet, seismic
         data_plot = ax.contourf(df, levels=np.arange(0, cmax, crange), extend='both', cmap=cmap1)
+        self.plot_standard_lims()
         divider = make_axes_locatable(ax)
         ax_cb = divider.new_horizontal(size="3%", pad=0.05, axes_class=plt.Axes)
         fig.add_axes(ax_cb)
@@ -211,6 +212,32 @@ class Plots:
             self.plot_site_lims(files, x_sites, y_sites)
             save_plot(files, save_name)
         return
+
+
+    def save_data(self, files):
+        key_list = ['SO', 'SG']
+        save_name = files.save + files.sim + '/transit_quant.txt'
+        f = open(save_name, 'w')
+        for target_area in key_list:
+            filepath = files.save + files.sim + '/' + target_area + '_transit.npy'
+
+            if not os.path.exists(filepath):
+                print('Error: Directory ' + filepath + ' with intermediate matrix does not exist, exiting')
+                sys.exit()
+            else:
+                df = np.load(filepath)
+                t = df[:, 2]
+                number_of_arrivals = np.sum(t > 0)
+                avg_transit_days = np.nanmean(t[t > 0])/24
+                std_transit_days = np.nanstd(t[t > 0])/24
+                f.writelines(target_area + ' number of arrivals:' + str(number_of_arrivals) + '\n')
+                f.writelines(target_area + ' avg transit in days:' + str(avg_transit_days) + '\n')
+                f.writelines(target_area + ' std transit in days:' + str(std_transit_days) + '\n')
+
+        f.close()
+        return
+
+
 
     def plot_transit(self, files):
         # Arguments:

@@ -4,7 +4,7 @@ def main_analysis(sim_list, trj_folder, shp_name, node):
     from set_directory import Folder
     from get_trajectory import Trajectory, Regional
     from analyse_trajectory import Analyse
-    from plot_trajectory import (Plots)
+    from plot_trajectory import Plots
     for s in sim_list:
         # Define names of main folders
         sim_folder = s  # Name of simulation instance
@@ -30,7 +30,23 @@ def main_analysis(sim_list, trj_folder, shp_name, node):
         p.plot_transit(f)
         p.plot_retention(f)
         p.plot_dom_paths(f, k_r)
-        return
+    return
+
+def get_quant(sim_list, trj_folder, shp_name, node):
+    from set_directory import Folder
+    from plot_trajectory import Plots
+    for s in sim_list:
+        # Define names of main folders
+        sim_folder = s  # Name of simulation instance
+
+        # Setup directory information for analysis
+        f = Folder(trj_folder, sim_folder, shp_name)  # Initialize folders
+        f.set_folder(node)  # Sets folders based on remote or local node
+
+        df = Plots()
+        df.save_data(f)
+
+
 
 
 def compare_2_years(t_folder1, sim_folder1, t_folder2, sim_folder2, node):
