@@ -18,13 +18,15 @@ class Plots:
 
     def __init__(self):
         # Land plot parameters
+        self.ylim_sites = None
+        self.xlim_sites = None
         self.land = None
         self.land_par = [-40000, -20000]
         self.depth_contours = np.linspace(0, 1500, 4)
         self.depth_colors = np.arange(0, 4500, 200)
         # todo: make different standard areas for plotting;
-        self.xlim_standard = [50, 750]
-        self.ylim_standard = [50, 750]
+        self.xlim_standard = [50,700]
+        self.ylim_standard = [50,700]
 
         # Define colormaps
         self.land_cmap = plt.get_cmap('gray')
@@ -44,8 +46,8 @@ class Plots:
 
         # Dominant pathways
         cmap1 = plt.get_cmap('OrRd')  # Oranges, Reds- sequential coolwarm= divergent, jet, seismic
-        data_plot = ax.contourf(df, levels=np.arange(0, cmax, crange), extend='both', cmap=cmap1)
         self.plot_standard_lims()
+        data_plot = ax.contourf(df, levels=np.arange(0, cmax, crange), extend='both', cmap=cmap1)
         divider = make_axes_locatable(ax)
         ax_cb = divider.new_horizontal(size="3%", pad=0.05, axes_class=plt.Axes)
         fig.add_axes(ax_cb)
@@ -113,13 +115,13 @@ class Plots:
     def plot_site_lims(self, files, x_sites, y_sites):
         depth_file = files.save + files.sim + '/depth.npy'
         depth = np.load(depth_file)
-        self.xlim_standard = [np.nanmax([np.nanmin(x_sites) - 20, 0]),
+        self.xlim_sites = [np.nanmax([np.nanmin(x_sites) - 20, 0]),
                               np.nanmin([np.nanmax(x_sites) + 20, np.shape(depth)[1]])]
-        self.ylim_standard = [np.nanmax([np.nanmin(y_sites) - 20, 0]),
+        self.ylim_sites = [np.nanmax([np.nanmin(y_sites) - 20, 0]),
                               np.nanmin([np.nanmax(y_sites) + 20, np.shape(depth)[0]])]
-        add_latlon(self.xlim_standard, self.ylim_standard)
-        plt.ylim(self.ylim_standard[0], self.ylim_standard[1])
-        plt.xlim(self.xlim_standard[0], self.xlim_standard[1])
+        add_latlon(self.xlim_sites, self.ylim_sites)
+        plt.ylim(self.ylim_sites[0], self.ylim_sites[1])
+        plt.xlim(self.xlim_sites[0], self.xlim_sites[1])
         plt.grid(alpha=0.45)
         return
 

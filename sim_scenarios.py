@@ -30,6 +30,9 @@ def main_analysis(sim_list, trj_folder, shp_name, node):
         p.plot_transit(f)
         p.plot_retention(f)
         p.plot_dom_paths(f, k_r)
+
+        k_t.nc_file.close()
+        k_r.nc_file.close()
     return
 
 def get_quant(sim_list, trj_folder, shp_name, node):
