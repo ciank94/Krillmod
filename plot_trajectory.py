@@ -25,8 +25,8 @@ class Plots:
         self.depth_contours = np.linspace(0, 1500, 4)
         self.depth_colors = np.arange(0, 4500, 200)
         # todo: make different standard areas for plotting;
-        self.xlim_standard = [50,700]
-        self.ylim_standard = [50,700]
+        self.xlim_standard = [50, 700]
+        self.ylim_standard = [50, 700]
 
         # Define colormaps
         self.land_cmap = plt.get_cmap('gray')
