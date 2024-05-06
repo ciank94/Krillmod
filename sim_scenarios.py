@@ -1,4 +1,38 @@
 # File that contains different simulation comparisons for specific projects e.g. comparing two years;
+def split_analysis(sim_list, trj_folder, shp_name, node):
+    from set_directory import Folder
+    from get_trajectory import Trajectory, Regional
+    from analyse_trajectory import Analyse
+    from plot_trajectory import Plots
+    for s in sim_list:
+        # Define names of main folders
+        sim_folder = s  # Name of simulation instance
+
+        # Setup directory information for analysis
+        f = Folder(trj_folder, sim_folder, shp_name)  # Initialize folders
+        f.set_folder(node)  # Sets folders based on remote or local node
+        f.exist()  # Checks existence of relevant folders and files
+
+        # Two classes for dealing with data:
+        k_r = Regional(f)
+        breakpoint()
+        # k_t = Trajectory(f)
+
+        # Now the analysis
+        # df = Analyse(f)
+        # df.dom_paths(k_r)
+        # # df.depth_profile(k_t)  # Note
+        # df.retention_times(k_r)
+        # df.transit_times('ALL', k_r)
+        #
+        # p = Plots()
+        # p.plot_connectivity(f, k_r)
+        # p.plot_transit(f)
+        # p.plot_retention(f)
+        # p.plot_dom_paths(f, k_r)
+
+        # k_t.nc_file.close()
+        k_r.nc_file.close()
 
 def main_analysis(sim_list, trj_folder, shp_name, node):
     from set_directory import Folder
@@ -16,12 +50,13 @@ def main_analysis(sim_list, trj_folder, shp_name, node):
 
         # Two classes for dealing with data:
         k_r = Regional(f)
-        k_t = Trajectory(f)
+        breakpoint()
+        #k_t = Trajectory(f)
 
         # Now the analysis
         df = Analyse(f)
         df.dom_paths(k_r)
-        df.depth_profile(k_t)  # Note
+        #df.depth_profile(k_t)  # Note
         df.retention_times(k_r)
         df.transit_times('ALL', k_r)
 
@@ -31,7 +66,7 @@ def main_analysis(sim_list, trj_folder, shp_name, node):
         p.plot_retention(f)
         p.plot_dom_paths(f, k_r)
 
-        k_t.nc_file.close()
+        #k_t.nc_file.close()
         k_r.nc_file.close()
     return
 

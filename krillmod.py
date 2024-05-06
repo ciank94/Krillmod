@@ -1,5 +1,5 @@
 # master file for krill model analysis
-from sim_scenarios import main_analysis, compare_2_years, get_quant  # simulation scenarios
+from sim_scenarios import main_analysis, compare_2_years, split_analysis, get_quant  # simulation scenarios
 
 # sim_list = ['2017']  # Simulation identifier
 # trj_folder = 'D:/Cian_sinmod/meeso_sim/sim_'  # trajectory folder
@@ -10,6 +10,15 @@ from sim_scenarios import main_analysis, compare_2_years, get_quant  # simulatio
 #
 # breakpoint()
 # 1: Main analysis for a list of simulations;
+sim_list = ['2017']  # Simulation identifier
+trj_folder = 'A:/Cian_sinmod/meeso_sim/sim_'  # trajectory folder
+#trj_folder = 'D:/Cian_sinmod/sim_'  # trajectory folder- betzy
+shp_name = 'ssmusPolygon.shp'  # Name of shape polygon if relevant
+split_analysis(sim_list, trj_folder, shp_name, node='local')
+breakpoint()
+
+
+
 sim_list = ['2017']  # Simulation identifier
 trj_folder = 'A:/Cian_sinmod/meeso_sim/sim_'  # trajectory folder
 #trj_folder = 'D:/Cian_sinmod/sim_'  # trajectory folder- betzy

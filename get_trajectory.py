@@ -12,7 +12,14 @@ class Regional:
     def __init__(self, f):
         self.depth = np.load(f.depth_file)
         self.time = np.load(f.time_file, allow_pickle=True)
-        self.reg_file = f.save + f.sim + '/regions.nc'
+
+        split_files = 1
+        if split_files == 1:
+            it_v = 1
+            self.reg_file = f.save + f.sim + '/' + str(it_v) + '_regions.nc'
+        else:
+            self.reg_file = f.save + f.sim + '/regions.nc'
+
 
         if not os.path.exists(self.reg_file):
             self.poly = np.load(f.poly_file)
@@ -22,17 +29,29 @@ class Regional:
         # Load relevant data
         self.nc_file = nc.Dataset(self.reg_file)
 
-        # From the trajectory file
-        self.x = self.nc_file['xp']
-        self.y = self.nc_file['yp']
-        self.z = self.nc_file['zp']
-        self.in_reg = self.nc_file['in_region']
-        self.act_part = self.nc_file['act_part']
-        self.start = self.nc_file['start']
-        self.p_max = np.shape(self.x)[0]
-        self.t_max = np.shape(self.x)[1]
-        self.i_max = np.shape(self.depth)[0]
-        self.j_max = np.shape(self.depth)[1]
+        if split_files == 1:
+            # From the trajectory file
+            self.x = self.nc_file['xp']
+            self.y = self.nc_file['yp']
+            self.p_max = np.shape(self.x)[0]
+            self.t_max = np.shape(self.x)[1]
+            self.i_max = np.shape(self.depth)[0]
+            self.j_max = np.shape(self.depth)[1]
+        else:
+            # From the trajectory file
+            self.x = self.nc_file['xp']
+            self.y = self.nc_file['yp']
+            self.z = self.nc_file['zp']
+            self.in_reg = self.nc_file['in_region']
+            self.act_part = self.nc_file['act_part']
+            self.start = self.nc_file['start']
+            self.p_max = np.shape(self.x)[0]
+            self.t_max = np.shape(self.x)[1]
+            self.i_max = np.shape(self.depth)[0]
+            self.j_max = np.shape(self.depth)[1]
+
+
+
 
     def init_reg_file(self, f):
         nc_file = nc.Dataset(f.trj_file)
@@ -89,20 +108,20 @@ class Regional:
                 nc_file.createDimension('time', shp_t)
 
                 # Create variable for storing presence/ absence in each region at each time:
-                act_ind = nc_file.createVariable('act_part', np.int16, 'particle')
-                start_area = nc_file.createVariable('start', np.int16, 'particle')
-                in_region = nc_file.createVariable('in_region', np.int16, ('particle', 'time'))
+                #act_ind = nc_file.createVariable('act_part', np.int16, 'particle')
+                #start_area = nc_file.createVariable('start', np.int16, 'particle')
+                #in_region = nc_file.createVariable('in_region', np.int16, ('particle', 'time'))
                 xv = nc_file.createVariable('xp', np.int16, ('particle', 'time'))
                 yv = nc_file.createVariable('yp', np.int16, ('particle', 'time'))
-                zv = nc_file.createVariable('zp', np.int16, ('particle', 'time'))
+                #zv = nc_file.createVariable('zp', np.int16, ('particle', 'time'))
 
                 # Store data in nc variables
-                act_ind[:] = act_poly
+                #act_ind[:] = act_poly
                 xv[:] = x_t
                 yv[:] = y_t
-                zv[:] = z_t
-                in_region[:] = in_area
-                start_area[:] = start_point
+                #zv[:] = z_t
+                #in_region[:] = in_area
+                #start_area[:] = start_point
 
                 print(nc_file)
                 nc_file.close()
