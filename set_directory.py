@@ -58,11 +58,11 @@ class Folder:
 
     def exist(self):
 
-        if not os.path.exists(self.shp_file):
-            print('Error: Directory "' + self.shp_file + '" does not exist\nCheck connection to directory')
-            sys.exit()
-        else:
-            print(self.shp_file + ' exists')
+        # if not os.path.exists(self.shp_file):
+        #     print('Error: Directory "' + self.shp_file + '" does not exist\nCheck connection to directory')
+        #     sys.exit()
+        # else:
+        #     print(self.shp_file + ' exists')
 
         if not os.path.exists(self.trj_file):
             print('Error: Directory "' + self.trj_file + '" does not exist\nCheck connection to directory')
@@ -85,10 +85,10 @@ class Folder:
         else:
             print(self.depth_file + ' exists')
 
-        if not os.path.exists(self.poly_file):
-            self.get_poly()
-        else:
-            print(self.poly_file + ' exists')
+        # if not os.path.exists(self.poly_file):
+        #     self.get_poly()
+        # else:
+        #     print(self.poly_file + ' exists')
 
         print('### NOTE:')
         print('All intermediate files exist for analysis')

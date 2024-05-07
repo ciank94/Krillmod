@@ -14,6 +14,10 @@ sim_list = ['2017']  # Simulation identifier
 trj_folder = 'A:/Cian_sinmod/meeso_sim/sim_'  # trajectory folder
 #trj_folder = 'D:/Cian_sinmod/sim_'  # trajectory folder- betzy
 shp_name = 'ssmusPolygon.shp'  # Name of shape polygon if relevant
+main_analysis(sim_list, trj_folder, shp_name, node='local')
+
+
+
 split_analysis(sim_list, trj_folder, shp_name, node='local')
 breakpoint()
 
