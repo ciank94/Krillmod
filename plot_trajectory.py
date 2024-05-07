@@ -25,8 +25,10 @@ class Plots:
         self.depth_contours = np.linspace(0, 1500, 4)
         self.depth_colors = np.arange(0, 4500, 200)
         # todo: make different standard areas for plotting;
-        self.xlim_standard = [50, 700]
-        self.ylim_standard = [50, 700]
+        self.xlim_standard = [50, 750]
+        self.ylim_standard = [50, 750]
+        self.SGlimx = [600, 800]
+        self.SGlimy = [400, 600]
 
         # Define colormaps
         self.land_cmap = plt.get_cmap('gray')
@@ -132,12 +134,20 @@ class Plots:
         plt.grid(alpha=0.45)
         return
 
+    def plot_SG_lims(self):
+        add_latlon(self.SGlimx, self.SGlimy)
+        plt.ylim(self.SGlimx[0], self.SGlimx[1])
+        plt.xlim(self.SGlimy[0], self.SGlimy[1])
+        plt.grid(alpha=0.45)
+
     def plot_depth(self, files, data):
         save_name = 'depth'
         fig, ax = plt.subplots()
         depth_1 = data.depth[:]
         depth_plot = ax.contourf(depth_1, levels=self.depth_colors, extend='both', cmap=self.depth_cmap, alpha=1)
         self.plot_background(files, ax)
+        self.plot_standard_lims()
+        #self.plot_SG_lims()
         cbar_title = 'Depth ' + '(m)'
         add_cbar(depth_plot, fig, ax, cbar_title)
         ax.tick_params(axis='x', labelsize=12)
@@ -484,13 +494,16 @@ def add_latlon(idxlimx, idxlimy):
     from get_trajectory import geo2grid
     GridData2_IMAX = 780
     GridData2_JMAX = 825
-    margv = 25
+    margvx = 25
+    margvy = 25
+    #margv = 25
+    #margv = 0
     for axfig in range(1, 3):
         if axfig == 1:
-            a2 = np.floor(np.linspace(idxlimy[0] + margv, idxlimy[1] - margv, 5))
+            a2 = np.floor(np.linspace(idxlimy[0] + margvy, idxlimy[1] - margvy, 5))
             a1 = np.floor(GridData2_IMAX / 2) * np.ones_like(a2)
         else:
-            a1 = np.floor(np.linspace(idxlimx[0] + margv, idxlimx[1] - margv, 5))
+            a1 = np.floor(np.linspace(idxlimx[0] + margvx, idxlimx[1] - margvx, 5))
             a2 = np.floor(GridData2_JMAX / 2) * np.ones_like(a1)
         # Convert grid coordinates to Lambert Conic coordinates
         f1, f2 = geo2grid(a1, a2, 'get_bl')
@@ -499,7 +512,7 @@ def add_latlon(idxlimx, idxlimy):
         v12 = (v1 * np.ones_like(f1))
         v12[0] = 0
         f1 = np.ceil(f1[0]) + np.cumsum(v12)
-
+        #
         v2 = np.floor(np.mean(np.abs(np.diff(f2))))
         v22 = (v2 * np.ones_like(f2))
         v22[0] = 0

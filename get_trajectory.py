@@ -6,187 +6,6 @@ import math
 import os
 
 
-class Regional:
-    name = 'Regional'
-
-    def __init__(self, f):
-        self.depth = np.load(f.depth_file)
-        self.time = np.load(f.time_file, allow_pickle=True)
-
-        split_files = 1
-        if split_files == 1:
-            it_v = 1
-            self.reg_file = f.save + f.sim + '/' + str(it_v) + '_regions.nc'
-        else:
-            self.reg_file = f.save + f.sim + '/regions.nc'
-
-
-        if not os.path.exists(self.reg_file):
-            self.poly = np.load(f.poly_file)
-            print('Note: Creating intermediate file ' + self.reg_file)
-            self.init_reg_file(f)
-
-        # Load relevant data
-        self.nc_file = nc.Dataset(self.reg_file)
-
-        if split_files == 1:
-            # From the trajectory file
-            self.x = self.nc_file['xp']
-            self.y = self.nc_file['yp']
-            self.p_max = np.shape(self.x)[0]
-            self.t_max = np.shape(self.x)[1]
-            self.i_max = np.shape(self.depth)[0]
-            self.j_max = np.shape(self.depth)[1]
-        else:
-            # From the trajectory file
-            self.x = self.nc_file['xp']
-            self.y = self.nc_file['yp']
-            self.z = self.nc_file['zp']
-            self.in_reg = self.nc_file['in_region']
-            self.act_part = self.nc_file['act_part']
-            self.start = self.nc_file['start']
-            self.p_max = np.shape(self.x)[0]
-            self.t_max = np.shape(self.x)[1]
-            self.i_max = np.shape(self.depth)[0]
-            self.j_max = np.shape(self.depth)[1]
-
-
-
-
-    def init_reg_file(self, f):
-        nc_file = nc.Dataset(f.trj_file)
-        x = nc_file['x']
-        y = nc_file['y']
-        z = nc_file['z']
-        act = nc_file['active']
-        split_files = 1
-        if split_files == 1:
-            m = np.zeros(np.shape(self.time)[0])
-            c = -1
-            for time_v in self.time:
-                c = c + 1
-                m[c] = time_v.month
-            it_list = np.unique(m).astype(int)
-            shp_i = np.shape(x)[1]
-            for it_v in it_list:
-                save_name = f.save + f.sim + '/' + str(it_v) + '_regions.nc'
-                shp_t = np.sum(m == it_v)
-                idx = np.where(m == it_v)
-                act_poly = np.zeros(shp_i, dtype=np.int16)
-                in_area = np.zeros([shp_i, shp_t], dtype=np.int16)
-                x_t = np.zeros([shp_i, shp_t], dtype=np.int16)
-                y_t = np.zeros([shp_i, shp_t], dtype=np.int16)
-                z_t = np.zeros([shp_i, shp_t], dtype=np.int16)
-
-                for t in range(0, shp_t):
-                    t_st = idx[0][t]
-                    x_t[:, t] = x[t_st, :].astype(int)
-                    y_t[:, t] = y[t_st, :].astype(int)
-                    z_t[:, t] = z[t_st, :].astype(int)
-                    act_t = act[t_st, :].astype(int)
-                    act_poly = act_poly + act_t
-                    in_area[:, t] = self.poly[y_t[:, t], x_t[:, t]]
-                    print('t = ' + str(t) + ' of ' + str(shp_t) + ' steps')
-                    print('Percent complete = ' + str(np.ceil((t / shp_t) * 100)))
-
-                act_poly = shp_t - act_poly  # Index of activity
-                list_start = np.unique(act_poly).astype(int)  # find starting points of each individual
-                start_point = np.zeros(shp_i)
-                for i in range(0, len(list_start)):
-                    id1 = list_start[i]
-                    log_id1 = act_poly == id1
-                    in_polt = in_area[log_id1, id1:shp_t]
-                    if np.shape(in_polt)[0] * np.shape(in_polt)[1] <= 0:
-                        print('Empty start areas ' + str(np.shape(in_polt)))
-                    else:
-                        start_point[log_id1] = in_polt[:, 0]
-
-                nc_file = nc.Dataset(save_name, mode='w', format='NETCDF4_CLASSIC')
-
-                # Specify nc dimensions
-                nc_file.createDimension('particle', shp_i)
-                nc_file.createDimension('time', shp_t)
-
-                # Create variable for storing presence/ absence in each region at each time:
-                #act_ind = nc_file.createVariable('act_part', np.int16, 'particle')
-                #start_area = nc_file.createVariable('start', np.int16, 'particle')
-                #in_region = nc_file.createVariable('in_region', np.int16, ('particle', 'time'))
-                xv = nc_file.createVariable('xp', np.int16, ('particle', 'time'))
-                yv = nc_file.createVariable('yp', np.int16, ('particle', 'time'))
-                #zv = nc_file.createVariable('zp', np.int16, ('particle', 'time'))
-
-                # Store data in nc variables
-                #act_ind[:] = act_poly
-                xv[:] = x_t
-                yv[:] = y_t
-                #zv[:] = z_t
-                #in_region[:] = in_area
-                #start_area[:] = start_point
-
-                print(nc_file)
-                nc_file.close()
-                print(save_name + ' is saved and closed.')
-
-        else:
-            shp_i = np.shape(x)[1]
-            shp_t = np.shape(x)[0]
-
-            act_poly = np.zeros(shp_i, dtype=np.int16)
-            in_area = np.zeros([shp_i, shp_t], dtype=np.int16)
-            x_t = np.zeros([shp_i, shp_t], dtype=np.int16)
-            y_t = np.zeros([shp_i, shp_t], dtype=np.int16)
-            z_t = np.zeros([shp_i, shp_t], dtype=np.int16)
-
-            for t in range(0, shp_t):
-                x_t[:, t] = x[t, :].astype(int)
-                y_t[:, t] = y[t, :].astype(int)
-                z_t[:, t] = z[t, :].astype(int)
-                act_t = act[t, :].astype(int)
-                act_poly = act_poly + act_t
-                in_area[:, t] = self.poly[y_t[:, t], x_t[:, t]]
-                print('t = ' + str(t) + ' of ' + str(shp_t) + ' steps')
-                print('Percent complete = ' + str(np.ceil((t / shp_t) * 100)))
-
-            act_poly = shp_t - act_poly  # Index of activity
-            list_start = np.unique(act_poly).astype(int)  # find starting points of each individual
-            start_point = np.zeros(shp_i)
-            for i in range(0, len(list_start)):
-                id1 = list_start[i]
-                log_id1 = act_poly == id1
-                in_polt = in_area[log_id1, id1:shp_t]
-                if np.shape(in_polt)[0] * np.shape(in_polt)[1] <= 0:
-                    print('Empty start areas ' + str(np.shape(in_polt)))
-                else:
-                    start_point[log_id1] = in_polt[:, 0]
-
-            nc_file = nc.Dataset(self.reg_file, mode='w', format='NETCDF4_CLASSIC')
-
-            # Specify nc dimensions
-            nc_file.createDimension('particle', shp_i)
-            nc_file.createDimension('time', shp_t)
-
-            # Create variable for storing presence/ absence in each region at each time:
-            act_ind = nc_file.createVariable('act_part', np.int16, 'particle')
-            start_area = nc_file.createVariable('start', np.int16, 'particle')
-            in_region = nc_file.createVariable('in_region', np.int16, ('particle', 'time'))
-            xv = nc_file.createVariable('xp', np.int16, ('particle', 'time'))
-            yv = nc_file.createVariable('yp', np.int16, ('particle', 'time'))
-            zv = nc_file.createVariable('zp', np.int16, ('particle', 'time'))
-
-            # Store data in nc variables
-            act_ind[:] = act_poly
-            xv[:] = x_t
-            yv[:] = y_t
-            zv[:] = z_t
-            in_region[:] = in_area
-            start_area[:] = start_point
-
-            print(nc_file)
-            nc_file.close()
-            print(self.reg_file + ' is saved and closed.')
-        return
-
-
 class Trajectory:
     name = 'Trajectory'
 
@@ -223,28 +42,10 @@ class Trajectory:
         slice_t = slice(act_t, self.t_max, 1)
         return slice_i, slice_t
 
-    def get_slice(self, t_id):
+    def xy_slice(self, t_id):
         x = self.x[t_id, :]
         y = self.y[t_id, :]
-        a_id = self.active[t_id, :]
-        bool_act = a_id == 1
-        x_act = x[bool_act]
-        y_act = y[bool_act]
-        return x_act, y_act, bool_act
-
-    def get_slice_z(self, t_id):
-        z = self.z[t_id, :]
-        a_id = self.active[t_id, :]
-        bool_act = a_id == 1
-        z_act = z[bool_act]
-        return z_act
-
-
-    def subset_data(self, id_start, id_end):
-        self.z = self.z[id_start:id_end, :]
-        self.x = self.x[id_start:id_end, :]
-        self.y = self.y[id_start:id_end, :]
-        return
+        return x, y
 
     def sim_account(self, f):
         # Note: Adapt this file for  new data storage
@@ -281,7 +82,6 @@ class Trajectory:
             f.writelines(n_parts_line4)
             f.writelines(n_parts_line5)
             f.writelines(n_parts_line6)
-
             f.close()
         else:
             print('')
@@ -368,3 +168,185 @@ def geo2grid(lat, lon, case):
             ys[i] = y / (dx * 1000)
 
     return xs, ys
+
+# class Regional:
+#     name = 'Regional'
+#
+#     def __init__(self, f):
+#         self.depth = np.load(f.depth_file)
+#         self.time = np.load(f.time_file, allow_pickle=True)
+#
+#         split_files = 1
+#         if split_files == 1:
+#             it_v = 1
+#             self.reg_file = f.save + f.sim + '/' + str(it_v) + '_regions.nc'
+#         else:
+#             self.reg_file = f.save + f.sim + '/regions.nc'
+#
+#
+#         if not os.path.exists(self.reg_file):
+#             self.poly = np.load(f.poly_file)
+#             print('Note: Creating intermediate file ' + self.reg_file)
+#             self.init_reg_file(f)
+#
+#         # Load relevant data
+#         self.nc_file = nc.Dataset(self.reg_file)
+#
+#         if split_files == 1:
+#             # From the trajectory file
+#             self.x = self.nc_file['xp']
+#             self.y = self.nc_file['yp']
+#             self.p_max = np.shape(self.x)[0]
+#             self.t_max = np.shape(self.x)[1]
+#             self.i_max = np.shape(self.depth)[0]
+#             self.j_max = np.shape(self.depth)[1]
+#         else:
+#             # From the trajectory file
+#             self.x = self.nc_file['xp']
+#             self.y = self.nc_file['yp']
+#             self.z = self.nc_file['zp']
+#             self.in_reg = self.nc_file['in_region']
+#             self.act_part = self.nc_file['act_part']
+#             self.start = self.nc_file['start']
+#             self.p_max = np.shape(self.x)[0]
+#             self.t_max = np.shape(self.x)[1]
+#             self.i_max = np.shape(self.depth)[0]
+#             self.j_max = np.shape(self.depth)[1]
+#
+#
+#
+#
+#     def init_reg_file(self, f):
+#         nc_file = nc.Dataset(f.trj_file)
+#         x = nc_file['x']
+#         y = nc_file['y']
+#         z = nc_file['z']
+#         act = nc_file['active']
+#         split_files = 1
+#         if split_files == 1:
+#             m = np.zeros(np.shape(self.time)[0])
+#             c = -1
+#             for time_v in self.time:
+#                 c = c + 1
+#                 m[c] = time_v.month
+#             it_list = np.unique(m).astype(int)
+#             shp_i = np.shape(x)[1]
+#             for it_v in it_list:
+#                 save_name = f.save + f.sim + '/' + str(it_v) + '_regions.nc'
+#                 shp_t = np.sum(m == it_v)
+#                 idx = np.where(m == it_v)
+#                 act_poly = np.zeros(shp_i, dtype=np.int16)
+#                 in_area = np.zeros([shp_i, shp_t], dtype=np.int16)
+#                 x_t = np.zeros([shp_i, shp_t], dtype=np.int16)
+#                 y_t = np.zeros([shp_i, shp_t], dtype=np.int16)
+#                 z_t = np.zeros([shp_i, shp_t], dtype=np.int16)
+#
+#                 for t in range(0, shp_t):
+#                     t_st = idx[0][t]
+#                     x_t[:, t] = x[t_st, :].astype(int)
+#                     y_t[:, t] = y[t_st, :].astype(int)
+#                     z_t[:, t] = z[t_st, :].astype(int)
+#                     act_t = act[t_st, :].astype(int)
+#                     act_poly = act_poly + act_t
+#                     in_area[:, t] = self.poly[y_t[:, t], x_t[:, t]]
+#                     print('t = ' + str(t) + ' of ' + str(shp_t) + ' steps')
+#                     print('Percent complete = ' + str(np.ceil((t / shp_t) * 100)))
+#
+#                 act_poly = shp_t - act_poly  # Index of activity
+#                 list_start = np.unique(act_poly).astype(int)  # find starting points of each individual
+#                 start_point = np.zeros(shp_i)
+#                 for i in range(0, len(list_start)):
+#                     id1 = list_start[i]
+#                     log_id1 = act_poly == id1
+#                     in_polt = in_area[log_id1, id1:shp_t]
+#                     if np.shape(in_polt)[0] * np.shape(in_polt)[1] <= 0:
+#                         print('Empty start areas ' + str(np.shape(in_polt)))
+#                     else:
+#                         start_point[log_id1] = in_polt[:, 0]
+#
+#                 nc_file = nc.Dataset(save_name, mode='w', format='NETCDF4_CLASSIC')
+#
+#                 # Specify nc dimensions
+#                 nc_file.createDimension('particle', shp_i)
+#                 nc_file.createDimension('time', shp_t)
+#
+#                 # Create variable for storing presence/ absence in each region at each time:
+#                 #act_ind = nc_file.createVariable('act_part', np.int16, 'particle')
+#                 #start_area = nc_file.createVariable('start', np.int16, 'particle')
+#                 #in_region = nc_file.createVariable('in_region', np.int16, ('particle', 'time'))
+#                 xv = nc_file.createVariable('xp', np.int16, ('particle', 'time'))
+#                 yv = nc_file.createVariable('yp', np.int16, ('particle', 'time'))
+#                 #zv = nc_file.createVariable('zp', np.int16, ('particle', 'time'))
+#
+#                 # Store data in nc variables
+#                 #act_ind[:] = act_poly
+#                 xv[:] = x_t
+#                 yv[:] = y_t
+#                 #zv[:] = z_t
+#                 #in_region[:] = in_area
+#                 #start_area[:] = start_point
+#
+#                 print(nc_file)
+#                 nc_file.close()
+#                 print(save_name + ' is saved and closed.')
+#
+#         else:
+#             shp_i = np.shape(x)[1]
+#             shp_t = np.shape(x)[0]
+#
+#             act_poly = np.zeros(shp_i, dtype=np.int16)
+#             in_area = np.zeros([shp_i, shp_t], dtype=np.int16)
+#             x_t = np.zeros([shp_i, shp_t], dtype=np.int16)
+#             y_t = np.zeros([shp_i, shp_t], dtype=np.int16)
+#             z_t = np.zeros([shp_i, shp_t], dtype=np.int16)
+#
+#             for t in range(0, shp_t):
+#                 x_t[:, t] = x[t, :].astype(int)
+#                 y_t[:, t] = y[t, :].astype(int)
+#                 z_t[:, t] = z[t, :].astype(int)
+#                 act_t = act[t, :].astype(int)
+#                 act_poly = act_poly + act_t
+#                 in_area[:, t] = self.poly[y_t[:, t], x_t[:, t]]
+#                 print('t = ' + str(t) + ' of ' + str(shp_t) + ' steps')
+#                 print('Percent complete = ' + str(np.ceil((t / shp_t) * 100)))
+#
+#             act_poly = shp_t - act_poly  # Index of activity
+#             list_start = np.unique(act_poly).astype(int)  # find starting points of each individual
+#             start_point = np.zeros(shp_i)
+#             for i in range(0, len(list_start)):
+#                 id1 = list_start[i]
+#                 log_id1 = act_poly == id1
+#                 in_polt = in_area[log_id1, id1:shp_t]
+#                 if np.shape(in_polt)[0] * np.shape(in_polt)[1] <= 0:
+#                     print('Empty start areas ' + str(np.shape(in_polt)))
+#                 else:
+#                     start_point[log_id1] = in_polt[:, 0]
+#
+#             nc_file = nc.Dataset(self.reg_file, mode='w', format='NETCDF4_CLASSIC')
+#
+#             # Specify nc dimensions
+#             nc_file.createDimension('particle', shp_i)
+#             nc_file.createDimension('time', shp_t)
+#
+#             # Create variable for storing presence/ absence in each region at each time:
+#             act_ind = nc_file.createVariable('act_part', np.int16, 'particle')
+#             start_area = nc_file.createVariable('start', np.int16, 'particle')
+#             in_region = nc_file.createVariable('in_region', np.int16, ('particle', 'time'))
+#             xv = nc_file.createVariable('xp', np.int16, ('particle', 'time'))
+#             yv = nc_file.createVariable('yp', np.int16, ('particle', 'time'))
+#             zv = nc_file.createVariable('zp', np.int16, ('particle', 'time'))
+#
+#             # Store data in nc variables
+#             act_ind[:] = act_poly
+#             xv[:] = x_t
+#             yv[:] = y_t
+#             zv[:] = z_t
+#             in_region[:] = in_area
+#             start_area[:] = start_point
+#
+#             print(nc_file)
+#             nc_file.close()
+#             print(self.reg_file + ' is saved and closed.')
+#         return
+#
+#
