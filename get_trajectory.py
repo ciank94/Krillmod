@@ -33,6 +33,14 @@ class Trajectory:
         # self.nc_file.close()
         return
 
+    def SG_dist(self, x ,y):
+        dist_lim = 50
+        SG_x = 700
+        SG_y = 500
+        e_dist = np.sqrt(((x - SG_x) ** 2) + (y - SG_y) ** 2)
+        near_SG = (e_dist < dist_lim)
+        return near_SG
+
     def get_batch(self, i):
         # Method to subset individuals
         start_i = (i-0)*self.n_sites
@@ -43,8 +51,9 @@ class Trajectory:
         return slice_i, slice_t
 
     def xy_slice(self, t_id):
-        x = self.x[t_id, :]
-        y = self.y[t_id, :]
+        x = self.x[t_id, :].astype(int)
+        y = self.y[t_id, :].astype(int)
+
         return x, y
 
     def sim_account(self, f):

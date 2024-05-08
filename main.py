@@ -10,8 +10,8 @@ import matplotlib.pyplot as plt
 sim_list = ['2017']  # Simulation identifier
 trj_folder = 'A:/Cian_sinmod/meeso_sim/sim_'  # trajectory folder
 node = 'local'
-
 shp_name = 'ssmusPolygon.shp'  # Name of shape polygon if relevant
+
 for s in sim_list:
     # Define names of main folders
     sim_folder = s  # Name of simulation instance
@@ -24,37 +24,74 @@ for s in sim_list:
     # Two classes for dealing with data:
     k_t = Trajectory(f)
 
-    p = Plots()
-    p.plot_depth(f, k_t)
-    p.plot_back(f)
+    p1 = Plots()
+    p1.plot_dom_paths(f, k_t)
     breakpoint()
+
+
+
+
 
     shp_t = np.shape(k_t.x)[0]
     shp_i = np.shape(k_t.x)[1]
-    SG_x = 520
-    SG_y = 750
-    site_matrix = np.zeros(k_t.n_sites)
+
     time_id = np.zeros(shp_i)
     in_region = np.zeros(shp_i)
+    df = np.zeros(np.shape(k_t.depth))
+    df[np.isnan(k_t.depth)] = np.nan
 
-    for i in range(0, shp_t, 10):
-
-
-
-
-
+    for i in range(0, shp_t, 1):
         print(i)
         [x1, y1] = k_t.xy_slice(i)
-        e_dist = np.sqrt(((x1 - SG_x) ** 2) + (y1 - SG_y) ** 2)
-        time_id[(e_dist<50) & (in_region == 0)] = i
-        in_region[e_dist<50] = np.nan
+
+        near_SG = k_t.SG_dist(x1, y1)
+        time_id[(near_SG) & (in_region == 0)] = i
+        in_region[near_SG] = np.nan
+
+        x2 = x1[x1 > 0]
+        y2 = y1[x1 > 0]
+        df[y2, x2] = df[y2, x2] + 1
+
+
+
+    save_name = 'dom_paths.npy'
+
+    df = df / np.nanmax(df)
+    #todo: make save intermediate file function;
+    save_file = f.save + f.sim + '/' + save_name
+    print('Saving: ' + save_file)
+    np.save(save_file, df)
+
+
+
+    #np.save()
+
+
+
+
+    breakpoint()
+    id = np.where(time_id > 0)
+    iv = id[0]
+    n_ent = np.shape(iv)[0]
+    ti = time_id[time_id > 0].astype(int)
+    x_samp = np.zeros(n_ent)
+    y_samp = np.zeros(n_ent)
+    for i in range(0, 100):
+        print(i)
+        x_samp[i] = k_t.x[ti[i], iv[i]]
+        y_samp[i] = k_t.y[ti[i], iv[i]]
+
     breakpoint()
 
 
 
     #todo: call functions that contain vectors for processing different conditions e.g. visit_region-;
     #todo: make regions
+    #todo: fix the trajectory code;
 
+    # p = Plots()
+    # p.plot_depth(f, k_t)
+    # p.plot_back(f)
 
     #
     #

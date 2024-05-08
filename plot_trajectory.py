@@ -38,13 +38,13 @@ class Plots:
     def plot_dom_paths(self, files, k):
         save_name = 'dominant_fig'
         depth = k.depth
-        dom_file = files.save + files.sim + '/dominant_paths.npy'
+        dom_file = files.save + files.sim + '/dom_paths.npy'
         df = np.load(dom_file)
         df[np.isnan(depth)] = np.nan
         fig, ax = plt.subplots()
         self.plot_background(files, ax)
-        cmax = 0.3
-        crange = 0.02
+        cmax = 1.2
+        crange = 0.03
 
         # Dominant pathways
         cmap1 = plt.get_cmap('OrRd')  # Oranges, Reds- sequential coolwarm= divergent, jet, seismic
