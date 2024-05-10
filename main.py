@@ -23,66 +23,71 @@ for s in sim_list:
 
     # Two classes for dealing with data:
     k_t = Trajectory(f)
+    k_t.save_transposed_file(f)
+    #breakpoint()
 
-    p1 = Plots()
-    p1.plot_dom_paths(f, k_t)
-    breakpoint()
-
-
-
-
-
-    shp_t = np.shape(k_t.x)[0]
-    shp_i = np.shape(k_t.x)[1]
-
-    time_id = np.zeros(shp_i)
-    in_region = np.zeros(shp_i)
-    df = np.zeros(np.shape(k_t.depth))
-    df[np.isnan(k_t.depth)] = np.nan
-
-    for i in range(0, shp_t, 1):
-        print(i)
-        [x1, y1] = k_t.xy_slice(i)
-
-        near_SG = k_t.SG_dist(x1, y1)
-        time_id[(near_SG) & (in_region == 0)] = i
-        in_region[near_SG] = np.nan
-
-        x2 = x1[x1 > 0]
-        y2 = y1[x1 > 0]
-        df[y2, x2] = df[y2, x2] + 1
-
-
-
-    save_name = 'dom_paths.npy'
-
-    df = df / np.nanmax(df)
-    #todo: make save intermediate file function;
-    save_file = f.save + f.sim + '/' + save_name
-    print('Saving: ' + save_file)
-    np.save(save_file, df)
-
-
-
-    #np.save()
+    #p1 = Plots()
+    #p1.plot_dom_paths(f, k_t)
 
 
 
 
-    breakpoint()
-    id = np.where(time_id > 0)
-    iv = id[0]
-    n_ent = np.shape(iv)[0]
-    ti = time_id[time_id > 0].astype(int)
-    x_samp = np.zeros(n_ent)
-    y_samp = np.zeros(n_ent)
-    for i in range(0, 100):
-        print(i)
-        x_samp[i] = k_t.x[ti[i], iv[i]]
-        y_samp[i] = k_t.y[ti[i], iv[i]]
 
-    breakpoint()
 
+
+
+    #t1 = np.load(f.save + f.sim + '/' + 'time_to_SG.npy')
+
+
+
+        # [x1, y1] = k_t.xy_slice(i)
+        #
+        # # check if near SG
+        # near_SG = k_t.SG_dist(x1, y1)
+        # time_id[near_SG & (in_region == 0)] = i
+        # in_region[near_SG] = np.nan
+
+        # x2 = x1[x1 > 0]
+        # y2 = y1[x1 > 0]
+        # df[y2, x2] = df[y2, x2] + 1
+
+    # breakpoint()
+    # save_name = 'time_to_SG.npy'
+    # save_file = f.save + f.sim + '/' + save_name
+    # np.save(save_file, time_id)
+    # breakpoint()
+
+
+
+    # save_name = 'dom_paths.npy'
+    #
+    # df = df / np.nanmax(df)
+    # #todo: make save intermediate file function;
+    # save_file = f.save + f.sim + '/' + save_name
+    # print('Saving: ' + save_file)
+    # np.save(save_file, df)
+    #
+    #
+    #
+    # #np.save()
+    #
+    #
+    #
+    #
+    # breakpoint()
+    # id = np.where(time_id > 0)
+    # iv = id[0]
+    # n_ent = np.shape(iv)[0]
+    # ti = time_id[time_id > 0].astype(int)
+    # x_samp = np.zeros(n_ent)
+    # y_samp = np.zeros(n_ent)
+    # for i in range(0, 100):
+    #     print(i)
+    #     x_samp[i] = k_t.x[ti[i], iv[i]]
+    #     y_samp[i] = k_t.y[ti[i], iv[i]]
+    #
+    # breakpoint()
+    #
 
 
     #todo: call functions that contain vectors for processing different conditions e.g. visit_region-;

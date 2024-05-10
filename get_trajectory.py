@@ -33,7 +33,43 @@ class Trajectory:
         # self.nc_file.close()
         return
 
-    def SG_dist(self, x ,y):
+    def save_transposed_file(self, f):
+        shp_t = np.shape(self.x)[0]
+        shp_i = np.shape(self.x)[1]
+
+        store_x = np.zeros([shp_i, shp_t], dtype='float16')
+        store_y = np.zeros([shp_i, shp_t], dtype='float16')
+        store_z = np.zeros([shp_i, shp_t], dtype='float16')
+        stride_l = 1
+        for i in range(0, shp_t, stride_l):
+            print(str(i) + ' / ' + str(shp_t))
+            store_x[:, i] = self.x[i, :]
+            store_y[:, i] = self.y[i, :]
+            store_z[:, i] = self.z[i, :]
+
+        save_name = f.save + f.sim + '/' + 'regions.nc'
+        nc_file = nc.Dataset(save_name, mode='w', format='NETCDF4_CLASSIC')
+
+        # Specify nc dimensions
+        nc_file.createDimension('particle', shp_i)
+        nc_file.createDimension('time', shp_t)
+
+        # Create variable for storing presence/ absence in each region at each time:
+        xv = nc_file.createVariable('xp', np.float16, ('particle', 'time'))
+        yv = nc_file.createVariable('yp', np.float16, ('particle', 'time'))
+        zv = nc_file.createVariable('zp', np.float16, ('particle', 'time'))
+
+        # Store data in nc variables
+        xv[:] = store_x
+        yv[:] = store_y
+        zv[:] = store_z
+
+        print(nc_file)
+        nc_file.close()
+        print(save_name + ' is saved and closed.')
+        return
+
+    def SG_dist(self, x,y):
         dist_lim = 50
         SG_x = 700
         SG_y = 500
@@ -53,7 +89,6 @@ class Trajectory:
     def xy_slice(self, t_id):
         x = self.x[t_id, :].astype(int)
         y = self.y[t_id, :].astype(int)
-
         return x, y
 
     def sim_account(self, f):
